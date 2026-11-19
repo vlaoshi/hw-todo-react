@@ -1,11 +1,24 @@
 /*
-  백엔드 저장소 (localhost:5050 → MongoDB)
+  백엔드 저장소 (백엔드 서버 → MongoDB Atlas)
   ---------------------------------------------------------
   기존 app.js의 apiRequest + BackendStore를 옮겼어요.
   - 요청할 때마다 Firebase 로그인 토큰을 Authorization 헤더에 담아 보내요.
     백엔드는 이 토큰을 검사해서 '누구의 데이터인지' 확인해요.
-  - 백엔드 주소는 .env의 VITE_API_BASE로 바꿀 수 있어요. (없으면 localhost:5050)
-  - 백엔드가 5173 주소의 요청을 받으려면 백엔드 .env의 CORS_ORIGINS에 5173이 있어야 해요.
+
+  ▶ 백엔드 주소 정하기 (프로젝트 폴더의 .env 파일)
+    - 클라우드타입에 배포한 서버를 쓸 때 (지금 설정)
+        VITE_API_BASE=https://(클라우드타입 주소)/api
+    - 내 컴퓨터에서 켠 백엔드를 쓸 때: .env에서 VITE_API_BASE 줄을 지우거나 아래처럼 적어요.
+        VITE_API_BASE=http://localhost:5050/api   (줄이 없으면 이 주소가 기본값이에요)
+    ※ .env는 개발 서버를 켤 때만 읽어요. 고친 뒤에는 npm run dev를 다시 실행해 주세요.
+    ※ .env는 .gitignore에 있어서 커밋되지 않아요. 다른 컴퓨터에서는 새로 만들어야 해요.
+
+  ▶ CORS (백엔드가 이 화면의 요청을 받아 주는 설정)
+    백엔드의 CORS_ORIGINS 환경 변수에 http://localhost:5173 이 있어야 해요.
+    - 클라우드타입: 클라우드타입 대시보드의 환경 변수에서 설정
+    - 내 컴퓨터: todo-backend/.env에서 설정
+    - 로컬 백엔드는 몽고디비 Atlas의 IP 허용 목록에 '지금 내 IP'가 있어야 연결돼요.
+      (클라우드타입 서버를 쓰면 내 IP가 바뀌어도 상관없어요)
 
   ▶ 함수 목록 (모두 async)
     loadProfile()                 프로필 { xp, stage, lastCheckInDate } (없으면 서버가 기본값으로 만들어 줘요)

@@ -157,10 +157,10 @@ export function getErrorMessage(error) {
       return `아쉽지만 계정 정원(${MAX_ACCOUNTS}개)이 모두 찼어요 😢`;
     case "app/timeout":
     case "unavailable":
-      return "서버가 응답하지 않아요. 인터넷 연결과 백엔드 서버(localhost:5050) 상태를 확인해 주세요.";
-    // ----- 백엔드 서버 (localhost:5050) — 3단계에서 사용 -----
+      return "서버가 응답하지 않아요. 인터넷 연결과 백엔드 서버 상태를 확인해 주세요.";
+    // ----- 백엔드 서버 (주소는 .env의 VITE_API_BASE, 없으면 localhost:5050) -----
     case "api/network":
-      return "백엔드 서버(localhost:5050)에 연결할 수 없어요. 서버가 켜져 있는지, CORS 설정에 5173이 있는지 확인해 주세요.";
+      return "백엔드 서버에 연결할 수 없어요. 서버가 켜져 있는지, CORS 설정에 5173이 있는지 확인해 주세요.";
     case "api/401":
       return "로그인이 만료됐어요. 다시 로그인해 주세요.";
     case "api/403":
