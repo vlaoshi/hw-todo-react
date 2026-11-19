@@ -9,3 +9,9 @@
 
 [build.environment]
   NODE_VERSION = "22"         # Vite 8은 Node 20.19 이상 또는 22.12 이상이 필요해요
+
+  # Netlify 비밀값 검사에서 Firebase 웹 apiKey만 빼요.
+  # - Firebase 웹 apiKey는 원래 브라우저에 공개되는 값이에요. (비밀번호가 아니에요)
+  # - 데이터는 Firebase 보안 규칙과 백엔드의 로그인 토큰 검사로 보호돼요.
+  # - 검사 기능 전체를 끄지 않고 이 값 하나만 빼서, 진짜 비밀값이 실수로 들어가면 계속 막아 줘요.
+  SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES = "AIzaSyDKv5yBZIfs0CCkufgIBnqnJ94vyOOaKEY"
