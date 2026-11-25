@@ -162,6 +162,32 @@ export async function deleteTodo(id) {
   await apiRequest(`/todos/${encodeURIComponent(serverId)}`, { method: "DELETE" });
 }
 
+/* ---------------------------------------------------------
+   반복 할 일 (Routine)
+   - 반복 '틀'은 서버에 저장되고, 실제 체크하는 할 일은 materializeRoutines로 날짜마다 만들어요.
+   --------------------------------------------------------- */
+
+// 반복 중인 틀 목록
+export function loadRoutines() {
+  return apiRequest("/routines");
+}
+
+// 반복 만들기 { text, days: [요일 번호 0(일)~6(토)], startDate } → 만든 틀
+export function createRoutine({ text, days, startDate }) {
+  return apiRequest("/routines", { method: "POST", body: { text, days, startDate } });
+}
+
+// 반복 그만하기 (이미 만들어진 할 일은 남아요)
+export async function stopRoutine(id) {
+  await apiRequest(`/routines/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+// 그 날짜의 반복 할 일을 만들고(이미 있으면 그대로), 그날의 반복 할 일 목록을 돌려줘요.
+export async function materializeRoutines(date) {
+  const todos = await apiRequest("/routines/materialize", { method: "POST", body: { date } });
+  return todos.map(fromServerTodo);
+}
+
 // 초기화: 내 할 일 전체 삭제 + 프로필 삭제
 export async function resetAll() {
   await apiRequest("/todos", { method: "DELETE" });

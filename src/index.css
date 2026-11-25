@@ -1608,3 +1608,82 @@ button {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* =========================================================
+   11. 반복 할 일 (React 버전에서 추가)
+   ========================================================= */
+
+/* 🔁 반복 켜기/끄기 버튼 (입력 폼 아랫줄 왼쪽) */
+.repeat-toggle {
+  padding: 4px 12px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  background: #fff;
+  border: 2px solid var(--lavender);
+  border-radius: 999px;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.repeat-toggle.is-on {
+  color: var(--ink);
+  background: var(--mint);
+  border-color: #7fd1ae;
+}
+
+/* 반복 요일 칩: 매일 / 월 화 수 목 금 토 일 */
+.repeat-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-left: 4px;
+}
+
+.day-chip {
+  min-width: 36px;
+  min-height: 36px; /* 손가락으로 누르기 편한 크기 */
+  padding: 4px 8px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  background: #f3f0f6;
+  border: 2px solid transparent;
+  border-radius: 999px;
+}
+
+.day-chip.is-on {
+  color: var(--ink);
+  background: var(--mint);
+  border-color: #7fd1ae;
+}
+
+.day-chip--all {
+  padding: 4px 12px;
+}
+
+/* 🔁 반복 배지 */
+.badge--repeat {
+  color: #2f7d5d;
+  background: #dcf5ea;
+}
+
+/* 미래 날짜의 '반복 예정' 미리보기: 흐리게, 누를 수 없음 */
+.todo-item.is-preview {
+  opacity: 0.6;
+  border-style: dashed;
+}
+
+.todo-item.is-preview .todo-check__box {
+  border-style: dashed;
+}
+
+/* 수정 모드의 '반복 그만하기' 버튼 */
+.stop-repeat-btn {
+  align-self: flex-start;
+  margin-top: 6px;
+  padding: 3px 10px;
+  font-size: 12px;
+  color: #c2456b;
+  background: #ffdbe4;
+  border: 0;
+  border-radius: 999px;
+}

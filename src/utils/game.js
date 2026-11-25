@@ -4,8 +4,8 @@
   - 기존 app.js에서는 전역 state를 직접 읽었지만,
     여기서는 필요한 값(todos 등)을 인자로 받아요. 그래야 React 어디서든 쓸 수 있어요.
 */
-import { STAGES, TIRED_THRESHOLD } from "../constants/game.js";
-import { todayStr, addDays, daysBetween, formatShort } from "./date.js";
+import { ABSENCE_DAYS, EVENING_HOUR, STAGES } from "../constants/game.js";
+import { todayStr, addDays, daysBetween, formatShort, fromDateStr } from "./date.js";
 
 // 배열에서 아무거나 하나 고르기
 export function pickRandom(list) {
@@ -27,6 +27,22 @@ export function getStageIndex(xp) {
   return index;
 }
 
+// XP 게이지 정보: 현재 단계 시작점 ~ 다음 단계 시작점 사이에서 얼마나 왔는지
+// (게임기와 미니 다마고치가 같이 써요)
+export function getXpProgress(xp) {
+  const stageIndex = getStageIndex(xp);
+  const stage = STAGES[stageIndex];
+  const next = STAGES[stageIndex + 1];
+  const percent = next ? ((xp - stage.minXp) / (next.minXp - stage.minXp)) * 100 : 100;
+  return {
+    stageIndex,
+    stage,
+    percent,
+    width: `${Math.min(100, Math.max(0, percent))}%`,
+    text: next ? `${xp} / ${next.minXp} XP` : `${xp} XP MAX`,
+  };
+}
+
 // 마감일이 지났는가? (완료하지 않았고, 마감일이 오늘보다 앞)
 export function isOverdue(todo, today = todayStr()) {
   return !todo.done && !!todo.dueDate && todo.dueDate < today;
@@ -39,9 +55,94 @@ export function getPendingCount(todos) {
     .length;
 }
 
-// 다크서클 상태인가?
-export function isTired(todos) {
-  return getPendingCount(todos) >= TIRED_THRESHOLD;
+/*
+  다마고치가 피곤한 이유 (없으면 null)
+  - 할 일이 많다고 지치지 않아요. 할 일은 '먹을 밥'이니까요!
+  - 대신 '방치'됐을 때만 피곤해해요. (우선순위 순)
+    absence : 오랜만에 접속했어요 (첫 완료를 하면 회복)
+    overdue : 마감이 지났는데 아직 못 한 일이 있어요
+    evening : 저녁 전부터 있던 오늘 할 일을, 저녁이 되도록 하나도 완료하지 않았어요
+              (저녁에 새로 적은 할 일은 '방치'가 아니라서 세지 않아요)
+  - absent: 이번 접속이 '오랜만의 접속'이고 아직 아무것도 완료하지 않았으면 true (TodoApp이 정해요)
+*/
+export function getTiredReason(todos, { absent = false, now = new Date() } = {}) {
+  if (absent) return "absence";
+
+  const today = todayStr();
+  if (todos.some((t) => isOverdue(t, today))) return "overdue";
+
+  if (now.getHours() >= EVENING_HOUR) {
+    const todayTodos = todos.filter((t) => t.date === today);
+    const doneToday = todayTodos.some((t) => t.done);
+    // 오늘 저녁 시작 시각 (예: 오늘 20:00)
+    const eveningStart = new Date(now);
+    eveningStart.setHours(EVENING_HOUR, 0, 0, 0);
+    const waitedSinceDay = todayTodos.some((t) => t.createdAt < eveningStart.getTime());
+    if (waitedSinceDay && !doneToday) return "evening";
+  }
+
+  return null;
+}
+
+// 지난 접속일(lastCheckInDate)로 '오랜만의 접속'인지 판단해요.
+// (처음 쓰는 사람은 lastCheckInDate가 없어서 오랜만이 아니에요)
+export function isLongAbsence(lastCheckInDate, today = todayStr()) {
+  return !!lastCheckInDate && daysBetween(lastCheckInDate, today) >= ABSENCE_DAYS;
+}
+
+/*
+  ▼ 반복 할 일 도우미
+  - 요일 번호: 0 일, 1 월, 2 화, 3 수, 4 목, 5 금, 6 토 (자바스크립트 Date와 같아요)
+*/
+
+// "YYYY-MM-DD" → 요일 번호
+export function weekdayOf(dateStr) {
+  return fromDateStr(dateStr).getDay();
+}
+
+// 이 반복이 그 날짜에 해당하나요? (요일이 맞고, 시작일이 지났으면)
+export function routineMatches(routine, dateStr) {
+  return routine.startDate <= dateStr && routine.days.includes(weekdayOf(dateStr));
+}
+
+// 미래 날짜에 보여 줄 '반복 예정' 미리보기 (저장하지 않은 가짜 할 일)
+// - 이미 그날 실제로 만들어진 반복 할 일은 빼요.
+export function getRoutinePreviews(routines, todos, dateStr) {
+  const made = new Set(todos.filter((t) => t.date === dateStr && t.routineId).map((t) => t.routineId));
+  return routines
+    .filter((r) => routineMatches(r, dateStr) && !made.has(r.id))
+    .map((r) => ({
+      id: `preview-${r.id}-${dateStr}`,
+      text: r.text,
+      date: dateStr,
+      originDate: dateStr,
+      done: false,
+      dueDate: null,
+      carryCount: 0,
+      bonusXp: 0,
+      routineId: r.id,
+      isPreview: true,
+    }));
+}
+
+// 반복 요일을 글로: [1,3,5] → "월·수·금", 7개 모두면 "매일"
+const WEEKDAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"];
+export function formatDays(days) {
+  if (days.length === 7) return "매일";
+  return days.map((d) => WEEKDAY_NAMES[d]).join("·");
+}
+
+/*
+  ▼ 접속 시 '지난 일 가져오기' 후보
+  - 마지막으로 물어본 날(lastCheckInDate)부터 어제까지의 못 한 일만 골라요.
+    그 전에 '그냥 두기'한 일은 다시 묻지 않아요.
+  - 반복 할 일은 빼요. (넘기기가 없고, 오늘 것이 또 생기니까요)
+*/
+export function getCheckInCandidates(todos, lastCheckInDate, today = todayStr()) {
+  const since = lastCheckInDate || "0000-00-00";
+  return todos
+    .filter((t) => !t.done && !t.routineId && t.date < today && t.date >= since)
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : b.createdAt - a.createdAt));
 }
 
 // 지금 보고 있는 날짜의 할 일

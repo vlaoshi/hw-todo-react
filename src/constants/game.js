@@ -15,8 +15,14 @@ export const XP_RULES = {
 // 같은 할 일을 이 횟수 이상 넘기면 다마고치가 잔소리를 해요.
 export const CARRY_NAG_COUNT = 3;
 
-// '오늘 못 한 일 + 마감 지난 일'이 이 개수 이상이면 '다크서클/배고픔' 상태
-export const TIRED_THRESHOLD = 5;
+/*
+  다마고치가 피곤해지는 기준 (할 일 개수가 아니라 '방치'를 봐요)
+  - 마지막 접속에서 이 일수 이상 지나서 들어오면 '오랜만' → 첫 완료 때까지 피곤
+  - 이 시각(24시간제) 이후인데 오늘 할 일을 하나도 완료하지 않았으면 피곤
+  - 마감 지난 미완료 할 일이 있어도 피곤
+*/
+export const ABSENCE_DAYS = 2;
+export const EVENING_HOUR = 20;
 
 // 할 일 글자 수 제한 (백엔드 Todo 모델의 maxlength와 같게)
 export const MAX_TEXT_LENGTH = 60;

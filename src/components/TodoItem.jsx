@@ -3,17 +3,70 @@
   - 기존 app.js의 createTodoElement(그리기) + startEdit(수정 모드)를 합쳤어요.
   - 사용자가 쓴 글자는 JSX에 {todo.text}로 넣어요. React가 알아서 글자로만 넣어 줘서
     <script> 같은 코드가 실행될 걱정이 없어요. (기존의 textContent와 같은 효과)
+  - 반복 할 일(todo.routineId)은 🔁 배지가 붙고 '내일로' 버튼이 없어요.
+    수정 모드에서 '반복 그만하기'를 누를 수 있어요.
+  - 미래 날짜의 반복 미리보기(todo.isPreview)는 체크·수정·삭제 없이 흐리게만 보여 줘요.
 */
 import { useEffect, useRef, useState } from "react";
 import { CARRY_NAG_COUNT, MAX_TEXT_LENGTH, XP_RULES } from "../constants/game.js";
 import { formatShort, todayStr } from "../utils/date.js";
-import { getCarryTarget, getDueInfo } from "../utils/game.js";
+import { formatDays, getCarryTarget, getDueInfo } from "../utils/game.js";
 
 // 사라지는 애니메이션(CSS) 시간과 맞춰요.
 const REMOVE_ANIMATION_MS = 280;
 
-export default function TodoItem({ todo, selectedDate, onToggle, onDelete, onEdit, onCarry, onCarryInfo }) {
+export default function TodoItem({
+  todo,
+  routine, // 이 할 일을 만든 반복 틀 (반복 중일 때만, 아니면 undefined)
+  selectedDate,
+  onToggle,
+  onDelete,
+  onEdit,
+  onCarry,
+  onCarryInfo,
+  onStopRoutine,
+}) {
+  if (todo.isPreview) return <PreviewItem todo={todo} routine={routine} />;
+  return (
+    <RealItem
+      todo={todo}
+      routine={routine}
+      selectedDate={selectedDate}
+      onToggle={onToggle}
+      onDelete={onDelete}
+      onEdit={onEdit}
+      onCarry={onCarry}
+      onCarryInfo={onCarryInfo}
+      onStopRoutine={onStopRoutine}
+    />
+  );
+}
+
+// 반복 배지 글자: 반복 중이면 요일까지, 멈춘 반복에서 온 할 일이면 그냥 '반복'
+function repeatLabel(routine) {
+  return routine ? `🔁 ${formatDays(routine.days)}` : "🔁 반복";
+}
+
+// 미래 날짜의 '반복 예정' 미리보기 (아직 저장되지 않은 할 일)
+function PreviewItem({ todo, routine }) {
+  return (
+    <li className="todo-item is-preview" aria-label={`${todo.text}, 반복 예정`}>
+      <span className="todo-check" aria-hidden="true">
+        <span className="todo-check__box" />
+      </span>
+      <div className="todo-main">
+        <span className="todo-text">{todo.text}</span>
+        <div className="todo-meta">
+          <span className="badge badge--repeat">{repeatLabel(routine)} · 반복 예정</span>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function RealItem({ todo, routine, selectedDate, onToggle, onDelete, onEdit, onCarry, onCarryInfo, onStopRoutine }) {
   const today = todayStr();
+  const isRoutine = !!todo.routineId;
   const [editing, setEditing] = useState(false);
   const [removing, setRemoving] = useState(false);
 
@@ -64,6 +117,8 @@ export default function TodoItem({ todo, selectedDate, onToggle, onDelete, onEdi
             setEditing(false);
             if (changes) onEdit(todo.id, changes);
           }}
+          // 반복 중인 할 일만 '반복 그만하기' 버튼을 보여 줘요.
+          onStopRoutine={routine ? () => onStopRoutine(routine.id) : null}
         />
       ) : (
         <div className="todo-main">
@@ -71,6 +126,9 @@ export default function TodoItem({ todo, selectedDate, onToggle, onDelete, onEdi
             {todo.text}
           </span>
           <div className="todo-meta">
+            {/* 🔁 반복 할 일 표식 */}
+            {isRoutine && <span className="badge badge--repeat">{repeatLabel(routine)}</span>}
+
             {/* ↪ 넘어온 표식 (누르면 처음 날짜를 알려 줘요) */}
             {todo.carryCount > 0 && (
               <button
@@ -91,8 +149,8 @@ export default function TodoItem({ todo, selectedDate, onToggle, onDelete, onEdi
             {/* 📅 마감일 */}
             {due && <span className={`badge badge--due ${due.cls}`}>{due.text}</span>}
 
-            {/* 내일로 / 오늘로 버튼 (못 한 일에만) */}
-            {!todo.done && (
+            {/* 내일로 / 오늘로 버튼 (못 한 일에만, 반복 할 일은 내일 또 오니까 없어요) */}
+            {!todo.done && !isRoutine && (
               <button
                 type="button"
                 className="carry-btn"
@@ -127,8 +185,10 @@ export default function TodoItem({ todo, selectedDate, onToggle, onDelete, onEdi
   수정 모드: 글자 입력칸 + 마감일 입력칸
   - Enter: 저장 / Esc: 취소 / 이 할 일 밖으로 포커스가 나가면 저장
   - onFinish(changes): 바뀐 게 있으면 { text, dueDate }, 없거나 취소면 null
+  - onStopRoutine: 반복 중인 할 일이면 '반복 그만하기' 버튼을 보여 줘요. (아니면 null)
+    글자를 고친 건 오늘 할 일에만 반영되고, 반복 틀은 그대로예요.
 */
-function EditForm({ todo, onFinish }) {
+function EditForm({ todo, onFinish, onStopRoutine }) {
   const [text, setText] = useState(todo.text);
   const [dueDate, setDueDate] = useState(todo.dueDate || "");
   const wrapRef = useRef(null);
@@ -193,6 +253,18 @@ function EditForm({ todo, onFinish }) {
           onChange={(e) => setDueDate(e.target.value)}
         />
       </label>
+      {onStopRoutine && (
+        <button
+          type="button"
+          className="stop-repeat-btn"
+          onClick={() => {
+            finish(true); // 고치던 내용은 저장하고
+            onStopRoutine(); // 반복은 멈춰요 (오늘 할 일은 남아요)
+          }}
+        >
+          🔁 반복 그만하기
+        </button>
+      )}
     </div>
   );
 }

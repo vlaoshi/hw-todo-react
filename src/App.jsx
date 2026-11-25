@@ -15,7 +15,8 @@ import LoginGate from "./components/LoginGate.jsx";
 import StatusGate from "./components/StatusGate.jsx";
 import useAuth from "./hooks/useAuth.js";
 import { getErrorMessage, withTimeout } from "./lib/auth.js";
-import { loadProfile, loadTodos } from "./lib/api.js";
+import { loadProfile, loadRoutines, loadTodos, materializeRoutines } from "./lib/api.js";
+import { todayStr } from "./utils/date.js";
 import TodoApp from "./TodoApp.jsx";
 
 const noop = () => {};
@@ -56,7 +57,7 @@ export default function App() {
 
 /*
   로그인한 사용자의 데이터 불러오기
-  - 프로필과 할 일을 백엔드에서 동시에 불러와요.
+  - 먼저 오늘의 반복 할 일을 만들어 두고(이미 있으면 그대로), 프로필·할 일·반복 목록을 동시에 불러와요.
   - 백엔드가 꺼져 있거나 CORS에 막히면 이유를 보여 주고 '다시 시도'할 수 있어요.
 */
 function UserSession({ user, onLogout }) {
@@ -65,9 +66,13 @@ function UserSession({ user, onLogout }) {
 
   useEffect(() => {
     let cancelled = false; // 불러오는 중에 로그아웃하면 결과를 버려요
-    withTimeout(Promise.all([loadProfile(), loadTodos()]))
-      .then(([profile, todos]) => {
-        if (!cancelled) setLoad({ status: "ready", profile, todos });
+    withTimeout(
+      materializeRoutines(todayStr()).then(() =>
+        Promise.all([loadProfile(), loadTodos(), loadRoutines()])
+      )
+    )
+      .then(([profile, todos, routines]) => {
+        if (!cancelled) setLoad({ status: "ready", profile, todos, routines });
       })
       .catch((error) => {
         console.error("데이터를 불러오지 못했어요:", error.code || error);
@@ -89,6 +94,7 @@ function UserSession({ user, onLogout }) {
         user={user}
         initialProfile={load.profile}
         initialTodos={load.todos}
+        initialRoutines={load.routines}
         onLogout={onLogout}
       />
     );

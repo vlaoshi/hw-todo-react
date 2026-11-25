@@ -3,33 +3,31 @@
   - LCD 화면: 레벨, 단계 이름, 배고픔, XP 게이지, 말풍선, 캐릭터
   - 아래쪽 A·B·C 버튼
   기존 index.html의 "1. 다마고치 게임기 영역"과 app.js의 renderStatus를 합친 컴포넌트예요.
+
+  fxRefs: 연출(애니메이션, 날아오는 음식, 진화 배너 등)을 붙일 요소를 TodoApp에 알려 주는 ref 묶음
+    { device, screen, bubble, pet, effectLayer } — 로그인 전 기본 화면처럼 연출이 없으면 생략해요.
 */
-import { STAGES, TIRED_THRESHOLD } from "../constants/game.js";
-import { getStageIndex } from "../utils/game.js";
+import { getXpProgress } from "../utils/game.js";
 import PixelPet from "./PixelPet.jsx";
 
 export default function Device({
   xp,
   pendingCount,
+  tired = false, // 방치돼서 피곤한 상태면 true (다크서클 화면 + 배고픔 경고색)
   mood,
   bubbleText,
   soundOn,
   onPet,
   onTalk,
   onToggleSound,
+  fxRefs = {},
 }) {
-  const stageIndex = getStageIndex(xp);
-  const stage = STAGES[stageIndex];
-  const next = STAGES[stageIndex + 1];
-  const tired = pendingCount >= TIRED_THRESHOLD;
-
-  // 게이지: 현재 단계 시작점 ~ 다음 단계 시작점 사이에서 얼마나 왔는지 (%)
-  const percent = next ? ((xp - stage.minXp) / (next.minXp - stage.minXp)) * 100 : 100;
-  const width = `${Math.min(100, Math.max(0, percent))}%`;
-  const xpText = next ? `${xp} / ${next.minXp} XP` : `${xp} XP MAX`;
+  // 연출용 ref (없으면 undefined → 연결 안 함)
+  const { device: deviceRef, screen: screenRef, bubble: bubbleRef, pet: petRef, effectLayer: effectLayerRef } = fxRefs;
+  const { stageIndex, stage, percent, width, text: xpText } = getXpProgress(xp);
 
   return (
-    <section className="device" aria-label="다마고치 게임기">
+    <section className="device" aria-label="다마고치 게임기" ref={deviceRef}>
       {/* 게임기 위쪽 로고 */}
       <div className="device__brand">
         <span className="device__logo">TAMA-DO</span>
@@ -37,7 +35,7 @@ export default function Device({
       </div>
 
       {/* LCD 화면 */}
-      <div className={`screen${tired ? " is-tired" : ""}`}>
+      <div className={`screen${tired ? " is-tired" : ""}`} ref={screenRef}>
         {/* 상단 상태줄: 레벨 + 진화 단계 이름 + 남은 할 일 수 */}
         <div className="screen__status">
           <span className="level">Lv.{stage.level}</span>
@@ -63,12 +61,13 @@ export default function Device({
         </div>
 
         {/* 말풍선: aria-live 덕분에 화면낭독기도 대사를 읽어줘요 */}
-        <div className="bubble" aria-live="polite">
+        <div className="bubble" aria-live="polite" ref={bubbleRef}>
           <span>{bubbleText}</span>
         </div>
 
         {/* 캐릭터 무대 */}
         <div className="pet-stage">
+          {/* pet-wrap: 둥실둥실 떠 있는 기본 애니메이션 / pet: 기쁨·충격·진화 같은 반응 애니메이션 */}
           <div className="pet-wrap">
             <button
               type="button"
@@ -76,6 +75,7 @@ export default function Device({
               aria-label="다마고치 쓰다듬기"
               data-stage={stageIndex + 1}
               onClick={onPet}
+              ref={petRef}
             >
               <PixelPet stageIndex={stageIndex} mood={mood} />
             </button>
@@ -83,8 +83,8 @@ export default function Device({
           <div className="pet-shadow" />
         </div>
 
-        {/* 효과 레이어: 날아오는 음식, +20 XP 글자 등 (5단계에서 채워요) */}
-        <div className="effect-layer" aria-hidden="true" />
+        {/* 효과 레이어: 날아오는 음식, +20 XP 글자, 진화 배너 등이 잠깐 나타나요 (fx.js가 채워요) */}
+        <div className="effect-layer" aria-hidden="true" ref={effectLayerRef} />
       </div>
 
       {/* 게임기 아래쪽 동그란 버튼 3개 */}
