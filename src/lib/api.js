@@ -28,6 +28,8 @@
     updateTodo(id, patch)         할 일의 일부 내용만 수정
     deleteTodo(id)                할 일 삭제
     resetAll()                    할 일과 프로필 모두 삭제 (초기화 버튼)
+    loadSignupSlots()             가입 정원 { count, max, left } (로그인 없이)
+    claimAccount()                가입 명단에 등록 (정원이 다 찼으면 api/409 오류)
 
   ▶ XP를 '변화량'으로 보내는 이유
     완료를 빠르게 여러 번 누르면 서버에 요청이 도착하는 순서가 뒤바뀔 수 있어요.
@@ -78,6 +80,24 @@ async function apiRequest(path, { method = "GET", body } = {}) {
     throw error;
   }
   return data;
+}
+
+// 남은 가입 자리 (로그인 전 화면에서 써서 토큰 없이 요청해요)
+export async function loadSignupSlots() {
+  let response;
+  try {
+    response = await withTimeout(fetch(API_BASE + "/accounts/slots"));
+  } catch (error) {
+    if (error.code === "app/timeout") throw error;
+    throw appError("api/network");
+  }
+  if (!response.ok) throw appError(`api/${response.status}`);
+  return response.json();
+}
+
+// 가입 명단에 등록 (Firebase 계정을 만든 뒤 불러요. 이미 있으면 그대로 성공)
+export function claimAccount() {
+  return apiRequest("/accounts", { method: "POST" });
 }
 
 // 서버의 할 일 → 앱에서 쓰는 모양

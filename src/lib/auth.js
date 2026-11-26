@@ -2,8 +2,9 @@
   로그인 계층 (Auth Layer)
   - 기존 app.js의 "4. 로그인 계층"을 화면 코드와 분리해서 옮겼어요.
   - 아이디 로그인: 아이디 + 비밀번호로 계정을 만들어요. (최대 20개)
-  - 아이디 가입과 '계정 20개 제한'은 Firestore가 담당해요.
-    백엔드도 요청마다 이 가입 명단(accounts)을 확인해요.
+  - 로그인 자체는 Firebase Authentication이 맡아요.
+  - 가입 명단과 '계정 20개 제한'은 백엔드(MongoDB)가 맡아요. (예전에는 Firestore)
+    백엔드는 요청마다 이 가입 명단을 확인해요.
 */
 import {
   createUserWithEmailAndPassword,
@@ -11,11 +12,11 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
-import { doc, getDoc, increment, writeBatch } from "firebase/firestore";
-import { auth, db } from "./firebase.js";
+import { auth } from "./firebase.js";
+import { claimAccount, loadSignupSlots } from "./api.js";
 
 // 아이디 계정 설정
-export const MAX_ACCOUNTS = 20; // 아이디 계정은 최대 20개까지 (Firestore 보안 규칙의 20과 같게!)
+export const MAX_ACCOUNTS = 20; // 아이디 계정은 최대 20개까지 (백엔드 lib/accounts.js의 MAX_ACCOUNTS와 같게!)
 export const ID_PATTERN = /^[a-z0-9_]{4,12}$/; // 아이디 규칙: 영문 소문자, 숫자, _ 로 4~12자
 export const MIN_PASSWORD_LENGTH = 6; // Firebase 비밀번호 최소 길이
 
@@ -65,22 +66,20 @@ export function withTimeout(promise, ms = TIMEOUT_MS) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
-// 가입 카운터 문서 위치: meta/signup  { count: 지금까지 가입한 아이디 계정 수 }
-const signupCounterRef = () => doc(db, "meta", "signup");
-
-// 지금까지 만들어진 아이디 계정 수
+// 지금까지 만들어진 아이디 계정 수 (백엔드에 물어봐요)
 export async function getSignupCount() {
-  const snap = await withTimeout(getDoc(signupCounterRef()));
-  return snap.exists() ? snap.data().count || 0 : 0;
+  const { count } = await loadSignupSlots();
+  return count || 0;
 }
 
-// 가입 명단에 자리 잡기: 명단 등록 + 카운터 +1 을 '한 번에(batch)' 기록해요.
-// 20개가 다 찼으면 보안 규칙이 거부해서 permission-denied 오류가 나요.
-async function claimAccountSlot(uid, id) {
-  const batch = writeBatch(db);
-  batch.set(doc(db, "accounts", uid), { username: id, createdAt: Date.now() });
-  batch.set(signupCounterRef(), { count: increment(1) }, { merge: true });
-  await withTimeout(batch.commit());
+// 가입 명단에 자리 잡기 (백엔드가 정원을 세서 등록해요. 아이디는 로그인 토큰에서 꺼내요)
+// 정원이 다 찼으면 app/full 오류를 던져요.
+async function claimAccountSlot() {
+  try {
+    await claimAccount();
+  } catch (error) {
+    throw error.code === "api/409" ? appError("app/full") : error;
+  }
 }
 
 // 가입 절차 중인지 표시 (가입 도중에 onAuthStateChanged가 먼저 게임을 시작하지 않게)
@@ -99,10 +98,10 @@ export async function signUpWithId(id, password) {
 
     // 3) 가입 명단에 자리 잡기. 실패하면(동시에 가입해서 꽉 찬 경우 등) 방금 만든 계정을 지워요.
     try {
-      await claimAccountSlot(credential.user.uid, id);
+      await claimAccountSlot();
     } catch (error) {
       await deleteUser(credential.user).catch(() => {});
-      throw error.code === "permission-denied" ? appError("app/full") : error;
+      throw error;
     }
     return credential.user;
   } finally {
@@ -122,14 +121,13 @@ export function logOut() {
 
 // 아이디 계정이 가입 명단에 있는지 확인해요.
 // (가입 중 인터넷이 끊겨 명단 등록을 못 했던 계정이면 자리가 남았을 때 다시 등록해요)
-export async function ensureAccountSlot(firebaseUser) {
-  const snap = await withTimeout(getDoc(doc(db, "accounts", firebaseUser.uid)));
-  if (snap.exists()) return true;
+// (예전 Firestore 명단에 있던 계정은 백엔드가 알아서 옮겨 와요)
+export async function ensureAccountSlot() {
   try {
-    await claimAccountSlot(firebaseUser.uid, emailToId(firebaseUser.email));
+    await claimAccountSlot();
     return true;
   } catch (error) {
-    if (error.code === "permission-denied") return false; // 자리가 없어요
+    if (error.code === "app/full") return false; // 자리가 없어요
     throw error;
   }
 }
@@ -171,8 +169,6 @@ export function getErrorMessage(error) {
       return "서버에서 할 일을 찾을 수 없어요. 새로고침해 주세요.";
     case "api/500":
       return "백엔드 서버에 오류가 생겼어요. 서버 로그를 확인해 주세요.";
-    case "permission-denied":
-      return "Firestore 보안 규칙에 막혔어요. 규칙을 게시했는지 확인해 주세요.";
     case "auth/network-request-failed":
       return "인터넷 연결을 확인해 주세요.";
     default:
