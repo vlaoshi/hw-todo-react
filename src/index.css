@@ -147,52 +147,6 @@ button {
   margin-top: 6px;
 }
 
-/* 동그란 버튼 A, B, C */
-.device__buttons {
-  display: flex;
-  justify-content: center;
-  gap: 22px;
-  margin-top: 16px;
-}
-
-.device-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 3px solid var(--shell-edge);
-  background: radial-gradient(circle at 35% 30%, #fff 0%, var(--lavender) 70%);
-  font-family: "Press Start 2P", monospace;
-  font-size: 11px;
-  color: var(--ink);
-  box-shadow: 0 4px 0 var(--shell-edge);
-  transition: transform 0.08s, box-shadow 0.08s;
-}
-
-.device-btn:nth-child(2) {
-  background: radial-gradient(circle at 35% 30%, #fff 0%, var(--mint) 70%);
-}
-
-.device-btn:nth-child(3) {
-  background: radial-gradient(circle at 35% 30%, #fff 0%, var(--yellow) 70%);
-}
-
-/* 누르면 쏙 들어가는 효과 */
-.device-btn:active {
-  transform: translateY(4px);
-  box-shadow: 0 0 0 var(--shell-edge);
-}
-
-.device-btn.is-off {
-  opacity: 0.55;
-}
-
-.device__hint {
-  margin: 10px 0 0;
-  text-align: center;
-  font-size: 12px;
-  color: var(--ink-soft);
-}
-
 /* ---------- 4. LCD 화면 ---------- */
 .screen {
   position: relative;
@@ -443,8 +397,6 @@ button {
   background: rgba(91, 74, 107, 0.15);
   border-radius: 50%;
 }
-
-/* --- 반응 애니메이션들 (app.js가 잠깐 클래스를 붙였다 떼요. 큰 캐릭터와 미니 캐릭터 모두 pet-anim 클래스를 가져요) --- */
 
 /* 기뻐서 폴짝 */
 .pet-anim.is-happy {
@@ -713,11 +665,6 @@ button {
   gap: 8px;
 }
 
-.todo-form__row--sub {
-  align-items: center;
-  padding-left: 4px;
-}
-
 .due-label {
   font-size: 14px;
   color: var(--ink-soft);
@@ -739,11 +686,6 @@ button {
   border-color: #b79bc9;
 }
 
-.due-input.is-error {
-  animation: shake 0.4s linear;
-  border-color: #e5577e;
-}
-
 .todo-form__input {
   flex: 1;
   min-width: 0; /* 좁은 화면에서 입력창이 넘치지 않게 */
@@ -760,11 +702,6 @@ button {
   border-color: var(--pink-deep);
 }
 
-.todo-form__input.is-error {
-  animation: shake 0.4s linear;
-  border-color: #e5577e;
-}
-
 .todo-form__btn {
   padding: 0 18px;
   font-size: 16px;
@@ -779,40 +716,6 @@ button {
 .todo-form__btn:active {
   transform: translateY(4px);
   box-shadow: 0 0 0 #d9779b;
-}
-
-/* 필터 버튼 */
-.filters {
-  display: flex;
-  gap: 6px;
-  margin: 16px 0 10px;
-}
-
-.filter {
-  flex: 1;
-  padding: 8px 4px;
-  font-size: 14px;
-  background: #f8f3fa;
-  border: 2px solid transparent;
-  border-radius: 999px;
-  color: var(--ink-soft);
-  transition: background 0.2s, color 0.2s;
-}
-
-.filter.is-active {
-  background: var(--lavender);
-  border-color: #b79bc9;
-  color: var(--ink);
-}
-
-.filter__count {
-  display: inline-block;
-  min-width: 20px;
-  margin-left: 2px;
-  padding: 1px 6px;
-  font-size: 12px;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 999px;
 }
 
 /* 할 일 목록 */
@@ -930,30 +833,6 @@ button {
   outline: none;
 }
 
-.todo-actions {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.icon-btn {
-  width: 34px;
-  height: 34px;
-  font-size: 15px;
-  background: transparent;
-  border: 0;
-  border-radius: 8px;
-  transition: background 0.15s;
-}
-
-.icon-btn:hover {
-  background: #f3ebf7;
-}
-
-.icon-btn--danger:hover {
-  background: #ffe1e8;
-}
-
 /* 수정 중 마감일 줄 */
 .todo-edit-due {
   display: flex;
@@ -1029,23 +908,6 @@ button {
   font-weight: bold;
 }
 
-/* 내일로 ➜ 버튼 (오른쪽 끝) */
-.carry-btn {
-  margin-left: auto;
-  padding: 3px 10px;
-  font-size: 12px;
-  color: var(--ink);
-  background: var(--sky);
-  border: 0;
-  border-radius: 999px;
-  white-space: nowrap;
-  transition: filter 0.15s;
-}
-
-.carry-btn:hover {
-  filter: brightness(0.95);
-}
-
 /* 수정 중일 때는 수정 버튼을 숨겨요 */
 .todo-item.is-editing [data-action="edit"] {
   visibility: hidden;
@@ -1056,39 +918,6 @@ button {
   text-align: center;
   color: var(--ink-soft);
   font-size: 15px;
-}
-
-.panel__footer {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 6px;
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 2px dashed var(--line);
-  font-size: 12px;
-  color: var(--ink-soft);
-}
-
-/* 패널 아래 사용자 이름 + 로그아웃 버튼 */
-.user-box {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.link-btn {
-  padding: 2px 8px;
-  font-size: 12px;
-  color: var(--ink-soft);
-  background: #f8f3fa;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-}
-
-.link-btn:hover {
-  color: var(--ink);
-  background: var(--lavender);
 }
 
 /* ---------- 7-1. 로그인 화면 (게이트) ---------- */
@@ -1247,24 +1076,6 @@ button {
   margin-top: 4px;
 }
 
-/* '또는' 구분선 */
-.login-divider {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 18px 0 4px;
-  font-size: 12px;
-  color: var(--ink-soft);
-}
-
-.login-divider::before,
-.login-divider::after {
-  content: "";
-  flex: 1;
-  height: 2px;
-  background: var(--line);
-}
-
 /* 로그인 상태 확인 중에는 버튼과 입력 폼을 숨겨요 */
 .login-gate.is-checking .login-btn,
 .login-gate.is-checking .id-form,
@@ -1314,10 +1125,6 @@ button {
   box-shadow:
     0 8px 0 var(--shell-edge),
     0 18px 40px rgba(244, 151, 182, 0.35);
-}
-
-.checkin__icon {
-  font-size: 44px;
 }
 
 .checkin__title {
@@ -1525,28 +1332,6 @@ button {
   top: 30%;
   font-size: 10px;
 }
-
-/* ---------- 9. 시연용 초기화 버튼 ---------- */
-.reset-btn {
-  position: fixed;
-  left: 14px; /* 오른쪽 아래는 미니 다마고치 자리라서 왼쪽으로 */
-  bottom: 14px;
-  z-index: 40;
-  padding: 7px 12px;
-  font-size: 12px;
-  color: var(--ink-soft);
-  background: rgba(255, 255, 255, 0.85);
-  border: 2px dashed var(--lavender);
-  border-radius: 999px;
-  opacity: 0.75;
-  transition: opacity 0.2s;
-}
-
-.reset-btn:hover {
-  opacity: 1;
-}
-
-/* ---------- 10. 반응형 / 움직임 줄이기 ---------- */
 
 /* 아주 좁은 화면(작은 휴대폰): 캐릭터와 여백을 조금 줄여요 */
 @media (max-width: 360px) {
@@ -1904,11 +1689,6 @@ button {
   background: #fffbea;
 }
 
-/* 입력 폼 아랫줄(반복 버튼 + 마감일/종료일)이 좁은 화면에서 넘치지 않게 줄바꿈 */
-.todo-form__row--sub {
-  flex-wrap: wrap;
-}
-
 /* 수정 모드의 '🔁 반복' 줄 (반복 버튼 + 종료일) */
 .todo-edit-repeat {
   display: flex;
@@ -2101,16 +1881,6 @@ button {
 .popover--menu {
   width: 220px;
   padding: 8px;
-}
-
-.popover__title {
-  margin: 4px 0 8px;
-  font-size: 15px;
-  font-weight: normal;
-}
-
-.rule-list + .popover__title {
-  margin-top: 14px;
 }
 
 .rule-list,
@@ -2540,26 +2310,6 @@ button.todo-text {
 
 .talk-btn:active {
   transform: scale(0.94);
-}
-
-/* ⤢ 크게 보기 */
-.pet-card__expand {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  color: #8a7a99;
-  background: transparent;
-  border: 0;
-  border-radius: 10px;
-}
-
-.pet-card__expand:hover {
-  background: #f8f3fa;
 }
 
 /* 작은 카드에서의 연출 위치: 캐릭터(왼쪽) 쪽으로 */
