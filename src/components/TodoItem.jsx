@@ -11,7 +11,8 @@
 import { useEffect, useRef, useState } from "react";
 import { CARRY_NAG_COUNT, MAX_TEXT_LENGTH, XP_RULES } from "../constants/game.js";
 import { formatShort, todayStr } from "../utils/date.js";
-import { formatDays, getCarryTarget, getDueInfo } from "../utils/game.js";
+import { formatRoutine, getCarryTarget, getDueInfo, weekdayOf } from "../utils/game.js";
+import DayChips from "./DayChips.jsx";
 
 // 사라지는 애니메이션(CSS) 시간과 맞춰요.
 const REMOVE_ANIMATION_MS = 280;
@@ -47,7 +48,7 @@ export default function TodoItem({
 
 // 반복 배지 글자: 반복 중이면 요일까지, 멈춘 반복에서 온 할 일이면 그냥 '반복'
 function repeatLabel(routine) {
-  return routine ? `🔁 ${formatDays(routine.days)}` : "🔁 반복";
+  return routine ? `🔁 ${formatRoutine(routine)}` : "🔁 반복";
 }
 
 // 미래 날짜의 '반복 예정' 미리보기 (아직 저장되지 않은 할 일)
@@ -212,10 +213,16 @@ function RealItem({
   - onFinish(changes): 바뀐 게 있으면 { text, dueDate }, 없거나 취소면 null
   - onStopRoutine: 반복 중인 할 일이면 '반복 그만하기' 버튼을 보여 줘요. (아니면 null)
     글자를 고친 건 오늘 할 일에만 반영되고, 반복 틀은 그대로예요.
+  - 보통 할 일이면 '🔁 반복' 버튼으로 반복 할 일로 바꿀 수 있어요.
+    이때 onFinish에 repeat: { days, endDate }가 함께 와요. (그 할 일 날짜부터 반복)
 */
 function EditForm({ todo, onFinish, onStopRoutine }) {
   const [text, setText] = useState(todo.text);
   const [dueDate, setDueDate] = useState(todo.dueDate || "");
+  const canRepeat = !todo.routineId; // 이미 반복 할 일이면 반복으로 바꾸는 버튼은 없어요
+  const [repeat, setRepeat] = useState(false);
+  const [days, setDays] = useState(() => [weekdayOf(todo.date)]); // 그 할 일의 요일을 미리 골라 둬요
+  const [repeatEnd, setRepeatEnd] = useState(""); // 반복 종료일 (비우면 계속 반복)
   const wrapRef = useRef(null);
   const inputRef = useRef(null);
   const finishedRef = useRef(false); // Enter와 포커스 이동이 동시에 일어나도 한 번만 처리
@@ -235,8 +242,9 @@ function EditForm({ todo, onFinish, onStopRoutine }) {
     const newDue = dueDate || null;
     const textChanged = !!newText && newText !== todo.text;
     const dueChanged = newDue !== (todo.dueDate || null);
-    if (!textChanged && !dueChanged) return onFinish(null);
-    onFinish({ text: textChanged ? newText : todo.text, dueDate: newDue });
+    const repeatChange = canRepeat && repeat ? { days, endDate: repeatEnd || null } : null;
+    if (!textChanged && !dueChanged && !repeatChange) return onFinish(null);
+    onFinish({ text: textChanged ? newText : todo.text, dueDate: newDue, repeat: repeatChange });
   }
 
   function handleKeyDown(e) {
@@ -278,6 +286,35 @@ function EditForm({ todo, onFinish, onStopRoutine }) {
           onChange={(e) => setDueDate(e.target.value)}
         />
       </label>
+      {/* 보통 할 일 → 반복 할 일로 바꾸기 (버튼을 눌러도 입력칸의 포커스를 뺏지 않게 onMouseDown을 막아요) */}
+      {canRepeat && (
+        <div className="todo-edit-repeat">
+          <button
+            type="button"
+            className={`repeat-toggle${repeat ? " is-on" : ""}`}
+            aria-pressed={repeat}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setRepeat(!repeat)}
+          >
+            🔁 반복
+          </button>
+          {repeat && (
+            <label className="todo-edit-due">
+              <span>📅 종료일</span>
+              <input
+                type="date"
+                className="due-input"
+                value={repeatEnd}
+                min={todo.date}
+                aria-label="반복 종료일 (비우면 계속 반복)"
+                onChange={(e) => setRepeatEnd(e.target.value)}
+              />
+            </label>
+          )}
+        </div>
+      )}
+      {canRepeat && repeat && <DayChips days={days} onChange={setDays} keepFocus />}
+
       {onStopRoutine && (
         <button
           type="button"

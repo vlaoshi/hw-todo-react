@@ -1729,13 +1729,6 @@ button {
   border-radius: var(--radius-md);
 }
 
-.schedule-month__title {
-  margin: 0 0 8px;
-  font-size: 15px;
-  font-weight: normal;
-  color: var(--ink);
-}
-
 /* '🔁 반복 중' 접기/펴기 버튼 */
 .schedule-routines__toggle {
   display: flex;
@@ -1806,21 +1799,14 @@ button {
   overflow-wrap: anywhere;
 }
 
-/* 월 묶음 */
-.schedule-month + .schedule-month {
-  margin-top: 20px;
+/* 달 이동 줄 (◀ 2026년 11월 ▶): 할 일 화면의 date-nav 모양을 그대로 쓰고 아래 여백만 줘요 */
+.schedule-nav {
+  margin-bottom: 12px;
 }
 
-.schedule-month__title {
-  position: sticky; /* 스크롤해도 지금 보고 있는 달이 위에 붙어 있어요 */
-  top: 0;
-  z-index: 1;
-  padding: 6px 4px;
-  font-family: "Press Start 2P", monospace;
-  font-size: 11px;
-  letter-spacing: 1px;
-  color: var(--pink-deep);
-  background: var(--card);
+/* 지난 날짜: 흐리게 (이전 달 기록이나 이번 달 지난 날) */
+.schedule-day.is-past {
+  opacity: 0.65;
 }
 
 /* 날짜 묶음 */
@@ -1914,4 +1900,23 @@ button {
 .todo-item.is-starred {
   border-color: var(--yellow);
   background: #fffbea;
+}
+
+/* 입력 폼 아랫줄(반복 버튼 + 마감일/종료일)이 좁은 화면에서 넘치지 않게 줄바꿈 */
+.todo-form__row--sub {
+  flex-wrap: wrap;
+}
+
+/* 수정 모드의 '🔁 반복' 줄 (반복 버튼 + 종료일) */
+.todo-edit-repeat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.todo-edit-repeat + .repeat-days {
+  margin-top: 6px;
+  padding-left: 0;
 }

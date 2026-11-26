@@ -172,9 +172,12 @@ export function loadRoutines() {
   return apiRequest("/routines");
 }
 
-// 반복 만들기 { text, days: [요일 번호 0(일)~6(토)], startDate } → 만든 틀
-export function createRoutine({ text, days, startDate }) {
-  return apiRequest("/routines", { method: "POST", body: { text, days, startDate } });
+// 반복 만들기 { text, days: [요일 번호 0(일)~6(토)], startDate, endDate(종료일, 없으면 null) } → 만든 틀
+// fromTodoId: 이미 있는 보통 할 일을 반복으로 바꿀 때 그 할 일의 (앱) 아이디 → 서버가 새 반복에 연결해 줘요.
+export async function createRoutine({ text, days, startDate, endDate = null, fromTodoId = null }) {
+  const body = { text, days, startDate, endDate };
+  if (fromTodoId) body.fromTodoId = await toServerId(fromTodoId); // 방금 추가한 할 일이면 서버 저장이 끝날 때까지 기다려요
+  return apiRequest("/routines", { method: "POST", body });
 }
 
 // 반복 그만하기 (이미 만들어진 할 일은 남아요)

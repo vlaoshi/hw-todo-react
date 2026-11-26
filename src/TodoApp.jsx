@@ -27,7 +27,7 @@ import { MESSAGES } from "./constants/messages.js";
 import { addDays, formatShort, todayStr } from "./utils/date.js";
 import {
   createId,
-  formatDays,
+  formatRoutine,
   getCarryTarget,
   getCheckInCandidates,
   getPendingCount,
@@ -484,14 +484,14 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
   /* ---------- 할 일 기능 ---------- */
 
   // [추가] 성공하면 true를 돌려줘요. (입력칸을 비울지 정하려고)
-  // repeatDays: 반복이면 요일 번호 배열, 보통 할 일이면 null
-  async function handleAdd(text, dueDate, repeatDays) {
+  // repeat: 반복이면 { days, endDate }, 보통 할 일이면 null
+  async function handleAdd(text, dueDate, repeat) {
     const trimmed = text.trim().slice(0, MAX_TEXT_LENGTH);
     if (!trimmed) {
       speak(pickRandom(MESSAGES.emptyInput));
       return false;
     }
-    if (repeatDays) return addRoutine(trimmed, repeatDays);
+    if (repeat) return addRoutine(trimmed, repeat);
 
     if (dueDate && dueDate < selectedDate) {
       speak(MESSAGES.dueInvalid);
@@ -508,20 +508,24 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
 
   // [반복 추가] 반복 틀은 서버 id가 필요해서 저장이 끝날 때까지 기다려요.
   // 오늘이 반복 요일이면 오늘 할 일도 바로 만들어요.
-  async function addRoutine(text, days) {
+  async function addRoutine(text, { days, endDate }) {
     if (days.length === 0) {
       speak(MESSAGES.routineNoDays);
       return false;
     }
+    if (endDate && endDate < selectedDate) {
+      speak(MESSAGES.routineEndInvalid);
+      return false;
+    }
     try {
-      const routine = await api.createRoutine({ text, days, startDate: selectedDate });
+      const routine = await api.createRoutine({ text, days, startDate: selectedDate, endDate });
       setRoutines((list) => [...list, routine]);
 
       const today = todayStr();
       if (routineMatches(routine, today)) mergeTodos(await api.materializeRoutines(today));
 
       flashMood("happy");
-      speak(pickRandom(MESSAGES.addRoutine).replace("{days}", formatDays(routine.days)));
+      speak(pickRandom(MESSAGES.addRoutine).replace("{days}", formatRoutine(routine)));
       sound("add");
       return true;
     } catch (error) {
@@ -639,18 +643,58 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
     persist(api.updateTodo(id, { starred }));
   }
 
-  // [수정] 글자와 마감일
-  function handleEdit(id, { text, dueDate }) {
+  // [수정] 글자와 마감일 (+ 보통 할 일을 반복 할 일로 바꾸기)
+  // repeat: { days, endDate } 이면 이 할 일 날짜부터 반복을 만들고, 이 할 일을 그날의 반복 할 일로 연결해요.
+  async function handleEdit(id, { text, dueDate, repeat }) {
     const todo = todos.find((t) => t.id === id);
     if (!todo) return;
     if (dueDate && dueDate < todo.date) {
       speak(MESSAGES.dueInvalid);
       return;
     }
-    patchTodo(id, { text, dueDate });
-    speak(pickRandom(MESSAGES.edit));
-    sound("click");
-    persist(api.updateTodo(id, { text, dueDate }));
+    const textChanged = text !== todo.text || dueDate !== (todo.dueDate || null);
+    if (textChanged) {
+      patchTodo(id, { text, dueDate });
+      persist(api.updateTodo(id, { text, dueDate }));
+    }
+    if (!repeat) {
+      speak(pickRandom(MESSAGES.edit));
+      sound("click");
+      return;
+    }
+
+    // ----- 반복 할 일로 바꾸기 -----
+    if (repeat.days.length === 0) {
+      speak(MESSAGES.routineNoDays);
+      return;
+    }
+    if (repeat.endDate && repeat.endDate < todo.date) {
+      speak(MESSAGES.routineEndInvalid);
+      return;
+    }
+    try {
+      const routine = await api.createRoutine({
+        text,
+        days: repeat.days,
+        startDate: todo.date,
+        endDate: repeat.endDate,
+        fromTodoId: id,
+      });
+      setRoutines((list) => [...list, routine]);
+      patchTodo(id, { routineId: routine.id }); // 이 할 일이 그날의 반복 할 일이 돼요 ('내일로' 버튼이 사라져요)
+
+      // 이 할 일이 오늘 것이 아니고 오늘이 반복 요일이면, 오늘 할 일도 바로 만들어요.
+      const today = todayStr();
+      if (todo.date !== today && routineMatches(routine, today)) {
+        mergeTodos(await api.materializeRoutines(today));
+      }
+      flashMood("happy");
+      speak(pickRandom(MESSAGES.addRoutine).replace("{days}", formatRoutine(routine)));
+      sound("add");
+    } catch (error) {
+      console.error("반복으로 바꾸기 실패:", error.code || error);
+      speak(getSaveErrorText(error));
+    }
   }
 
   // [내일로 / 오늘로] XP -5, 넘긴 횟수 +1 (반복 할 일은 넘기기 없음)

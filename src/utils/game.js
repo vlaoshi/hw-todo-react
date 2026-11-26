@@ -100,9 +100,18 @@ export function weekdayOf(dateStr) {
   return fromDateStr(dateStr).getDay();
 }
 
-// 이 반복이 그 날짜에 해당하나요? (요일이 맞고, 시작일이 지났으면)
+// 이 반복이 그 날짜에 해당하나요? (요일이 맞고, 시작일이 지났고, 종료일이 안 지났으면)
 export function routineMatches(routine, dateStr) {
-  return routine.startDate <= dateStr && routine.days.includes(weekdayOf(dateStr));
+  return (
+    routine.startDate <= dateStr &&
+    (!routine.endDate || dateStr <= routine.endDate) &&
+    routine.days.includes(weekdayOf(dateStr))
+  );
+}
+
+// 종료일이 지나서 끝난 반복인가요?
+export function isRoutineEnded(routine, today = todayStr()) {
+  return !!routine.endDate && routine.endDate < today;
 }
 
 // 미래 날짜에 보여 줄 '반복 예정' 미리보기 (저장하지 않은 가짜 할 일)
@@ -130,6 +139,11 @@ const WEEKDAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"];
 export function formatDays(days) {
   if (days.length === 7) return "매일";
   return days.map((d) => WEEKDAY_NAMES[d]).join("·");
+}
+
+// 반복 틀을 글로: "월·수·금", 종료일이 있으면 "월·수·금 ~12/31"
+export function formatRoutine(routine) {
+  return routine.endDate ? `${formatDays(routine.days)} ~${formatShort(routine.endDate)}` : formatDays(routine.days);
 }
 
 /*

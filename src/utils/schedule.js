@@ -1,27 +1,38 @@
 /*
-  스케줄 페이지용 계산
-  - 오늘부터 앞으로의 할 일을 '월 → 날짜' 순서로 묶어요.
+  스케줄 페이지용 계산 (한 달씩 보기)
+  - 고른 달("YYYY-MM")의 할 일을 날짜별로 묶어요. 지난 날짜도 포함해요. (이전 달 기록 보기)
   - 하는 날(date)에 한 번, 마감일(dueDate)이 다른 날이면 그날에도 '마감'으로 한 번 더 넣어요.
-  - 반복 할 일은 '반복 할 일도 보기'를 켰을 때만 넣어요. (기본은 일회성 일정만)
-    켜면 이미 만들어진 반복 할 일 + 앞으로 4주 동안의 '반복 예정' 미리보기를 넣어요.
-    (매일 반복하는 일이 끝없이 이어지지 않게 4주로 제한해요)
+  - 반복 할 일은 '반복 할 일 포함'을 켰을 때만 넣어요. (기본은 일회성 일정만)
+    켜면 실제로 만들어진 반복 할 일 + 오늘 이후 날짜의 '반복 예정' 미리보기를 넣어요.
 */
 import { addDays, daysBetween, todayStr } from "./date.js";
 import { getRoutinePreviews } from "./game.js";
 
-// 반복 예정 미리보기를 보여 줄 기간 (오늘 포함 4주)
-export const ROUTINE_PREVIEW_DAYS = 28;
+// "2026-11" → "2026년 11월"
+export function formatMonth(month) {
+  const [y, m] = month.split("-").map(Number);
+  return `${y}년 ${m}월`;
+}
+
+// "2026-11"에 n달 더하기 (빼려면 음수) → "2026-12"
+export function addMonths(month, n) {
+  const [y, m] = month.split("-").map(Number);
+  const date = new Date(y, m - 1 + n, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+// 오늘이 속한 달 "YYYY-MM"
+export function currentMonth(today = todayStr()) {
+  return today.slice(0, 7);
+}
 
 /*
-  반환 모양: [
-    { month: "2026-11", label: "2026년 11월", days: [
-      { date: "2026-11-27", items: [{ kind: "plan" | "due", todo }] }, ...
-    ] }, ...
-  ]
+  반환 모양: [{ date: "2026-11-27", items: [{ kind: "plan" | "due", todo }] }, ...] (날짜순, 일정 있는 날만)
   options.routines        : 반복 중인 틀 목록 (미리보기를 만들 때 써요)
   options.includeRoutines : true면 반복 할 일도 넣어요
 */
-export function getScheduleMonths(todos, today = todayStr(), { routines = [], includeRoutines = false } = {}) {
+export function getScheduleDays(todos, month, today = todayStr(), { routines = [], includeRoutines = false } = {}) {
+  const inMonth = (date) => !!date && date.startsWith(month);
   const byDate = new Map(); // 날짜 → 항목 목록
 
   const add = (date, item) => {
@@ -31,45 +42,39 @@ export function getScheduleMonths(todos, today = todayStr(), { routines = [], in
 
   for (const todo of todos) {
     if (todo.routineId && !includeRoutines) continue; // 일회성 일정만 볼 때는 반복 할 일을 빼요
-    if (todo.date >= today) add(todo.date, { kind: "plan", todo });
+    if (inMonth(todo.date)) add(todo.date, { kind: "plan", todo });
     // 마감일이 하는 날과 다르면, 마감일에도 표시 (완료한 일은 마감 걱정이 없으니 빼요)
-    if (!todo.done && todo.dueDate && todo.dueDate >= today && todo.dueDate !== todo.date) {
+    if (!todo.done && inMonth(todo.dueDate) && todo.dueDate !== todo.date) {
       add(todo.dueDate, { kind: "due", todo });
     }
   }
 
-  // 반복 예정 미리보기 (오늘부터 4주, 이미 만들어진 날은 getRoutinePreviews가 빼 줘요)
+  // 반복 예정 미리보기: 이 달 안에서 오늘 이후 날짜만 (지난 날은 실제로 생긴 할 일만 보여 줘요)
   if (includeRoutines && routines.length) {
-    for (let i = 0; i < ROUTINE_PREVIEW_DAYS; i++) {
-      const date = addDays(today, i);
+    for (let date = `${month}-01`; inMonth(date); date = addDays(date, 1)) {
+      if (date < today) continue;
       for (const preview of getRoutinePreviews(routines, todos, date)) add(date, { kind: "plan", todo: preview });
     }
   }
 
   // 날짜 안에서는: ⭐ 중요한 일 → 못 한 일 → 반복 예정 → 마감 → 완료한 일, 같은 종류끼리는 먼저 만든 순서
-  // (못 한 일 중에서도 중요한 일 ⭐이 맨 위)
   const order = (item) =>
     item.todo.done ? 4 : item.kind === "due" ? 3 : item.todo.isPreview ? 2 : item.todo.starred ? 0 : 1;
-  const months = new Map();
-  for (const date of [...byDate.keys()].sort()) {
-    const items = byDate
+
+  return [...byDate.keys()].sort().map((date) => ({
+    date,
+    items: byDate
       .get(date)
-      .sort((a, b) => order(a) - order(b) || (a.todo.createdAt ?? 0) - (b.todo.createdAt ?? 0));
-    const month = date.slice(0, 7);
-    if (!months.has(month)) {
-      const [y, m] = month.split("-").map(Number);
-      months.set(month, { month, label: `${y}년 ${m}월`, days: [] });
-    }
-    months.get(month).days.push({ date, items });
-  }
-  return [...months.values()];
+      .sort((a, b) => order(a) - order(b) || (a.todo.createdAt ?? 0) - (b.todo.createdAt ?? 0)),
+  }));
 }
 
-// 날짜 제목 옆에 붙일 상대 날짜: 오늘 / 내일 / 모레 / 5일 뒤
+// 날짜 제목 옆에 붙일 상대 날짜: 오늘 / 내일 / 모레 / 5일 뒤 / 어제 / 3일 전
 export function relativeDayLabel(date, today = todayStr()) {
   const diff = daysBetween(today, date);
   if (diff === 0) return "오늘";
   if (diff === 1) return "내일";
   if (diff === 2) return "모레";
-  return `${diff}일 뒤`;
+  if (diff === -1) return "어제";
+  return diff > 0 ? `${diff}일 뒤` : `${-diff}일 전`;
 }
