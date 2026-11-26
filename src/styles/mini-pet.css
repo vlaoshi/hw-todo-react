@@ -1,0 +1,138 @@
+/* 미니 다마고치 (게임기가 안 보일 때 따라다녀요) */
+.mini-pet {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px 9px;
+  background: var(--lcd);
+  border: 3px solid var(--shell-edge);
+  border-radius: 22px;
+  box-shadow:
+    0 5px 0 var(--shell-edge),
+    0 10px 20px rgba(244, 151, 182, 0.35);
+  /* 평소에는 화면 아래로 숨어 있다가 */
+  transform: translateY(160%);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.25s,
+    background-color 0.4s;
+}
+
+/* 게임기가 화면 밖으로 나가면 통통 튀어 올라와요 */
+.mini-pet.is-shown {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 다크서클 상태면 미니 화면도 칙칙하게 */
+.mini-pet.is-tired {
+  background-color: #dde3d3;
+}
+
+.mini-pet__body {
+  display: block;
+}
+
+/* 미니 XP 게이지 */
+.mini-pet__xp {
+  display: block;
+  width: 64px;
+  height: 8px;
+  padding: 1px;
+  background: #fff;
+  border: 2px solid var(--ink);
+  border-radius: 5px;
+}
+
+.mini-pet__xp-fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: var(--pink-deep);
+  border-radius: 3px;
+  transition: width 0.6s ease-out;
+}
+
+/* 미니 말풍선: 미니 캐릭터 위쪽에 잠깐 나타나요 */
+.mini-pet__bubble {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 12px);
+  width: max-content;
+  max-width: min(230px, calc(100vw - 32px));
+  padding: 8px 11px;
+  background: #fff;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: left;
+  word-break: keep-all;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+
+/* 말풍선 꼬리 */
+.mini-pet__bubble::after {
+  content: "";
+  position: absolute;
+  right: 30px;
+  bottom: -8px;
+  border-style: solid;
+  border-width: 8px 6px 0;
+  border-color: var(--ink) transparent transparent;
+}
+
+.mini-pet.is-talking .mini-pet__bubble {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 카운트다운 숫자 배지 (왼쪽 위 모서리) */
+.mini-pet__countdown {
+  position: absolute;
+  top: -14px;
+  left: -14px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 14px;
+  color: #fff;
+  background: var(--pink-deep);
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 3px 8px rgba(244, 151, 182, 0.6);
+}
+
+/* display: grid가 hidden 속성을 덮어쓰지 않도록 따로 지정 */
+.mini-pet__countdown[hidden] {
+  display: none;
+}
+
+.mini-pet__countdown.is-pop {
+  animation: pop 0.35s ease-out;
+}
+
+/* 미니 효과 레이어 (+20 XP 글자) */
+.mini-pet__effects {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.mini-pet__effects .float-text {
+  top: 30%;
+  font-size: 10px;
+}

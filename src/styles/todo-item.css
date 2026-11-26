@@ -1,0 +1,401 @@
+/* 할 일 목록 */
+.todo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 할 일 한 줄: 체크 + 글자 + ☆ (배지는 하나만), 글자를 누르면 메뉴가 펼쳐져요 */
+/* 폰에서 왼쪽으로 밀어서 내일로 */
+.todo-item {
+  display: flex;
+  border: 2px solid var(--line);
+  animation: item-in 0.25s ease-out;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 2px 2px 2px 4px;
+  background: #fff;
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes item-in {
+  from { transform: translateY(-6px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.todo-item.is-done {
+  background: #f2fbf6;
+  border-color: #d4f0e1;
+}
+
+/* 삭제될 때 옆으로 휙 사라지기 */
+.todo-item.is-removing {
+  animation: item-out 0.3s ease-in forwards;
+}
+
+@keyframes item-out {
+  to { transform: translateX(60px); opacity: 0; }
+}
+
+/* 커스텀 체크박스: 진짜 체크박스는 숨기고 예쁜 상자를 대신 보여 줘요 */
+/* 체크박스: 보이는 상자는 24px, 누르는 범위는 44px */
+.todo-check {
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+}
+
+.todo-check__input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0; /* 보이지 않지만 클릭/키보드는 동작 */
+  cursor: pointer;
+}
+
+.todo-check__box {
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 3px solid var(--mint);
+  border-radius: 8px;
+  transition: background 0.15s;
+  width: 24px;
+  height: 24px;
+  border-width: 2.5px;
+}
+
+/* 강조색: 체크된 상자 */
+.todo-check__input:checked + .todo-check__box {
+  background: var(--check);
+  border-color: var(--check);
+}
+
+/* 체크되면 ✓ 표시 */
+.todo-check__input:checked + .todo-check__box::after {
+  content: "✓";
+  font-size: 16px;
+  color: #fff;
+}
+
+.todo-check__input:focus-visible + .todo-check__box {
+  outline: 3px solid var(--pink-deep);
+  outline-offset: 2px;
+}
+
+/* 글자 + 표식 줄을 담는 가운데 영역 */
+.todo-main {
+  flex: 1;
+  min-width: 0;
+  padding-top: 3px;
+  padding: 8px 0;
+}
+
+.todo-text {
+  display: block;
+  font-size: 16px;
+  line-height: 1.35;
+  word-break: break-word; /* 긴 영어/숫자도 줄바꿈 */
+}
+
+.todo-item.is-done .todo-text {
+  color: var(--ink-soft);
+  text-decoration: line-through;
+  text-decoration-color: var(--mint);
+  text-decoration-thickness: 2px;
+}
+
+/* 수정 중 입력창 */
+.todo-edit {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 16px;
+  border: 2px solid var(--lavender);
+  border-radius: 8px;
+  outline: none;
+}
+
+/* 수정 중 마감일 줄 */
+.todo-edit-due {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+/* 수정 중에는 표식 줄을 숨겨요 */
+.todo-item.is-editing .todo-meta {
+  display: none;
+}
+
+/* --- 할 일 아래 작은 표식 줄 --- */
+.todo-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.todo-meta:empty {
+  display: none;
+}
+
+.badge {
+  padding: 2px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  background: #f3f0f6;
+  border: 0;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* ↪ 넘어온 표식 */
+.badge--carry {
+  color: #6b55a3;
+  background: #ece4f7;
+  cursor: pointer;
+}
+
+/* 3번 이상 넘긴 할 일: 눈에 띄게 */
+.badge--carry.is-nag {
+  color: #fff;
+  background: #a58bd0;
+}
+
+/* 원래 날짜 표시 (다른 날의 마감 지난 일) */
+/* 원래 날짜 꼬리표: 글씨가 잘 보이게 */
+.badge--from {
+  background: #eef2f7;
+  color: var(--ink-mute);
+}
+
+/* 📅 마감일 */
+.badge--due {
+  color: #3c8a66;
+  background: #e3f6ec;
+}
+
+.badge--due.is-soon {
+  color: #a35b00;
+  background: #ffe9c7;
+}
+
+.badge--due.is-over {
+  color: #c2456b;
+  background: #ffdbe4;
+  font-weight: bold;
+}
+
+/* 수정 중일 때는 수정 버튼을 숨겨요 */
+.todo-item.is-editing [data-action="edit"] {
+  visibility: hidden;
+}
+
+/* 🔁 반복 배지 */
+.badge--repeat {
+  color: #2f7d5d;
+  background: #dcf5ea;
+}
+
+/* 미래 날짜의 '반복 예정' 미리보기: 흐리게, 누를 수 없음 */
+.todo-item.is-preview {
+  opacity: 0.6;
+  border-style: dashed;
+}
+
+.todo-item.is-preview .todo-check__box {
+  border-style: dashed;
+}
+
+/* 수정 모드의 '반복 그만하기' 버튼 */
+.stop-repeat-btn {
+  align-self: flex-start;
+  margin-top: 6px;
+  padding: 3px 10px;
+  font-size: 12px;
+  color: #c2456b;
+  background: #ffdbe4;
+  border: 0;
+  border-radius: 999px;
+}
+
+/* ☆ / ⭐ 버튼 */
+/* ☆ / ⭐ 버튼 (44px 누르는 범위) */
+.star-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: #8a7a99;
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
+}
+
+.star-btn.is-on {
+  color: #e0a800;
+}
+
+/* 중요한 일 줄: 노란빛 테두리로 눈에 띄게 */
+.todo-item.is-starred {
+  border-color: var(--yellow);
+  background: #fffbea;
+}
+
+/* 수정 모드의 '🔁 반복' 줄 (반복 버튼 + 종료일) */
+.todo-edit-repeat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.todo-edit-repeat + .repeat-days {
+  margin-top: 6px;
+  padding-left: 0;
+}
+
+/* 목록과 입력칸 사이 여백 (필터가 빠진 자리) */
+.todo-form + .todo-list {
+  margin-top: 14px;
+}
+
+.todo-item.is-open {
+  border-color: var(--lavender);
+}
+
+.todo-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 52px;
+  position: relative;
+  z-index: 1;
+  touch-action: pan-y; /* 위아래 스크롤은 브라우저가, 가로 밀기는 앱이 맡아요 */
+  background: inherit;
+  transition: transform 0.2s ease-out;
+}
+
+/* 글자는 버튼이에요 (누르면 메뉴 펼침). 버튼 기본 모양을 지워요. */
+button.todo-text {
+  width: 100%;
+  padding: 0;
+  font-family: inherit;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.star-btn:hover {
+  background: #f8f3fa;
+}
+
+/* 펼친 메뉴: 수정 / 내일로 / 삭제 */
+.todo-menu {
+  display: flex;
+  gap: 6px;
+  padding: 0 6px 8px 46px; /* 글자 시작 위치에 맞춰요 */
+}
+
+.todo-menu__btn {
+  flex: 1;
+  min-height: 40px;
+  padding: 0 6px;
+  font-size: 14px;
+  color: var(--ink);
+  background: #f3f0f6;
+  border: 0;
+  border-radius: 12px;
+}
+
+.todo-menu__btn--carry {
+  color: #2f5d86;
+  background: #e3f1fd;
+}
+
+.todo-menu__btn--danger {
+  color: #a8335a;
+  background: #ffe4ec;
+}
+
+/* 수정 모드에서는 글자 칸이 넓게 */
+.todo-item.is-editing .todo-row {
+  align-items: flex-start;
+}
+
+/* 지우기 → "왜 지울까요?" */
+/* "왜 지울까요?" 줄은 넓게 써서 버튼 글자가 줄바꿈되지 않게 */
+.todo-menu--ask {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding-left: 12px;
+}
+
+.todo-menu__question {
+  font-size: 14px;
+  color: var(--ink-mute);
+}
+
+.todo-menu__row {
+  display: flex;
+  gap: 6px;
+}
+
+.todo-menu__cancel {
+  align-self: flex-start;
+  min-height: 36px;
+  padding: 0 10px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink-mute);
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+}
+
+.todo-menu__cancel:hover {
+  background: #f8f3fa;
+}
+
+.todo-row.is-dragging {
+  transition: none; /* 손가락을 바로 따라오게 */
+}
+
+.swipe-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 18px;
+  font-size: 15px;
+  color: #2f5d86;
+  background: #e3f1fd;
+}
+
+.swipe-hint.is-ready {
+  color: #fff;
+  background: #4a86c0;
+}

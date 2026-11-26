@@ -1,0 +1,145 @@
+/* --- 날짜 이동 영역 --- */
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.date-nav__btn {
+  flex-shrink: 0;
+  font-size: 14px;
+  transition: transform 0.08s, box-shadow 0.08s;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--ink-mute);
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.date-nav__btn:active {
+  transform: none;
+  box-shadow: none;
+}
+
+.date-nav__center {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 8px;
+  text-align: center;
+}
+
+.date-nav__label {
+  font-weight: normal;
+  font-size: 17px;
+}
+
+/* 오늘/어제/내일 꼬리표 */
+.date-nav__rel {
+  padding: 2px 8px;
+  font-size: 12px;
+  border-radius: 999px;
+  color: var(--ink-mute);
+  background: #f8f3fa;
+}
+
+.date-nav__rel.is-today {
+  color: #a8335a;
+  background: #ffe0ec;
+}
+
+.today-btn {
+  padding: 3px 10px;
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--yellow);
+  border: 0;
+  border-radius: 999px;
+}
+
+.empty {
+  margin: 18px 0 8px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 15px;
+}
+
+/* 📋 할 일 | 📅 스케줄 탭 (로그인 화면 탭과 같은 모양) */
+/* 탭 + 날짜 이동을 한 덩어리로: 날짜 줄은 상자 없이 가볍게 */
+.view-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f8f3fa;
+  border-radius: 999px;
+  margin-bottom: 6px;
+}
+
+.view-tab {
+  flex: 1;
+  min-height: 40px;
+  padding: 8px 4px;
+  font-size: 15px;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.view-tab.is-active {
+  color: var(--ink);
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(205, 180, 219, 0.5);
+}
+
+.date-nav__btn:hover {
+  background: #f8f3fa;
+}
+
+/* 완료한 일 접기 칸 */
+.done-section {
+  margin-top: 12px;
+}
+
+.done-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  font-size: 15px;
+  color: var(--ink-mute);
+  text-align: left;
+  background: #f8f3fa;
+  border: 0;
+  border-radius: 12px;
+}
+
+.done-toggle:hover {
+  background: #f1e9f5;
+}
+
+.done-list {
+  margin-top: 8px;
+}
+
+/* 처음 쓰는 사람을 위한 안내 한 줄 */
+.usage-hint {
+  margin: 10px 4px 0;
+  font-size: 13px;
+  text-align: center;
+  color: var(--ink-mute);
+}

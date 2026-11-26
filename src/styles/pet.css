@@ -1,0 +1,252 @@
+/* 픽셀 캐릭터와 반응 애니메이션 */
+.pet-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 12px;
+  min-height: calc(var(--px) * 16 + 24px);
+}
+
+/* 기본 상태: 위아래로 둥실둥실 */
+.pet-wrap {
+  animation: idle-bob 2.2s ease-in-out infinite;
+}
+
+@keyframes idle-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes tired-sway {
+  0%, 100% { transform: rotate(-3deg) translateY(2px); }
+  50% { transform: rotate(3deg) translateY(2px); }
+}
+
+.pet {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 12px;
+}
+
+/* 16×16 픽셀 격자 */
+.pixel-grid {
+  display: grid;
+  grid-template-columns: repeat(16, var(--px));
+  grid-template-rows: repeat(16, var(--px));
+}
+
+/* 픽셀 한 칸 */
+.px {
+  display: block;
+  width: var(--px);
+  height: var(--px);
+}
+
+/* 5단계 전설 캐릭터의 반짝이 픽셀 */
+.px.is-sparkle {
+  animation: twinkle 1.2s steps(2) infinite;
+}
+
+@keyframes twinkle {
+  0% { opacity: 1; }
+  100% { opacity: 0.15; }
+}
+
+/* 5단계는 금빛으로 빛나요 */
+.pet-anim[data-stage="5"] {
+  filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.9));
+}
+
+/* 그림자 */
+.pet-shadow {
+  width: calc(var(--px) * 10);
+  height: 10px;
+  margin-top: 2px;
+  background: rgba(91, 74, 107, 0.15);
+  border-radius: 50%;
+}
+
+/* 기뻐서 폴짝 */
+.pet-anim.is-happy {
+  animation: jump 0.6s ease-out 2;
+}
+
+@keyframes jump {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  20% { transform: translateY(0) scale(1.1, 0.9); }
+  50% { transform: translateY(-18px) scale(0.95, 1.05); }
+  80% { transform: translateY(0) scale(1.05, 0.95); }
+}
+
+/* 냠냠 씹기 */
+.pet-anim.is-eating {
+  animation: chew 0.25s ease-in-out 4;
+}
+
+@keyframes chew {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(1.08, 0.92); }
+}
+
+/* 충격받아 덜덜 */
+.pet-anim.is-shocked {
+  animation: shake 0.5s linear 2;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px) rotate(-4deg); }
+  40% { transform: translateX(6px) rotate(4deg); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+/* 진화: 빙글 돌며 커졌다 작아져요 */
+.pet-anim.is-evolving {
+  animation: evolve 1.2s ease-in-out;
+}
+
+@keyframes evolve {
+  0% { transform: scale(1) rotate(0); filter: brightness(1); }
+  40% { transform: scale(0.6) rotate(360deg); filter: brightness(3); }
+  70% { transform: scale(1.25) rotate(720deg); filter: brightness(2); }
+  100% { transform: scale(1) rotate(720deg); filter: brightness(1); }
+}
+
+/* 쓰다듬기: 살짝 기울며 하트 */
+.pet-anim.is-petted {
+  animation: wiggle 0.5s ease-in-out;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0); }
+  30% { transform: rotate(-8deg); }
+  70% { transform: rotate(8deg); }
+}
+
+/* 효과: 음식, XP 글자, 진화 배너, 폭죽 */
+.effect-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* 효과가 클릭을 막지 않게 */
+}
+
+/* 날아와서 입으로 쏙 들어가는 음식 */
+.food {
+  position: absolute;
+  left: 50%;
+  top: 72%;
+  font-size: 30px;
+  animation: food-fly 0.8s ease-in forwards;
+}
+
+@keyframes food-fly {
+  0% { transform: translate(-150px, 30px) scale(1.2) rotate(-30deg); opacity: 0; }
+  20% { opacity: 1; }
+  80% { transform: translate(-50%, -50%) scale(0.9) rotate(10deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.1); opacity: 0; }
+}
+
+/* 위로 떠오르며 사라지는 글자 (+20 XP, 💕 등) */
+.float-text {
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  transform: translateX(-50%);
+  font-family: "Press Start 2P", monospace;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--pink-deep);
+  text-shadow: 2px 2px 0 #fff;
+  animation: float-up 1.2s ease-out forwards;
+}
+
+.float-text.is-minus {
+  color: #7a6aa8;
+}
+
+.float-text.is-emoji {
+  font-family: inherit;
+  font-size: 22px;
+}
+
+@keyframes float-up {
+  0% { transform: translate(-50%, 0); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translate(-50%, -70px); opacity: 0; }
+}
+
+/* 충격 받았을 때 머리 위 느낌표 */
+.shock-mark {
+  position: absolute;
+  left: calc(50% + 50px);
+  top: 46%;
+  font-family: "Press Start 2P", monospace;
+  font-size: 22px;
+  color: #e5577e;
+  animation: shock-pop 1s ease-out forwards;
+}
+
+@keyframes shock-pop {
+  0% { transform: scale(0); opacity: 0; }
+  20% { transform: scale(1.4); opacity: 1; }
+  40% { transform: scale(1); }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+/* 진화 배너 */
+.evolve-banner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  padding: 10px 16px;
+  background: var(--ink);
+  color: var(--yellow);
+  border-radius: 10px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 13px;
+  white-space: nowrap;
+  box-shadow: 0 0 0 3px #fff;
+  animation: banner 2s ease-in-out forwards;
+}
+
+@keyframes banner {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  15% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+  25%, 80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -80%) scale(1); opacity: 0; }
+}
+
+/* 폭죽(색종이) 레이어: 화면 전체를 덮지만 클릭은 통과 */
+.confetti-layer {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* 색종이 한 조각: 위치/속도/색은 lib/fx.js가 CSS 변수로 넣어 줘요 */
+.confetti {
+  position: absolute;
+  top: -20px;
+  left: var(--x);
+  width: var(--w, 8px);
+  height: var(--h, 12px);
+  background: var(--color);
+  border-radius: 2px;
+  animation: confetti-fall var(--dur) cubic-bezier(0.25, 0.6, 0.5, 1) var(--delay) forwards;
+}
+
+@keyframes confetti-fall {
+  0% { transform: translate(0, 0) rotate(0); opacity: 1; }
+  100% { transform: translate(var(--dx), 110vh) rotate(var(--rot)); opacity: 0.9; }
+}
+
+/* 미니 캐릭터는 픽셀 한 칸을 4px로 작게 */
+.pixel-grid--mini {
+  --px: 4px;
+}

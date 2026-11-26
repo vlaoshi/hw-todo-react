@@ -1,0 +1,213 @@
+/* --- 할 일 입력 폼 (윗줄: 글자 + 추가 / 아랫줄: 마감일) --- */
+.todo-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.todo-form__row {
+  display: flex;
+  gap: 8px;
+}
+
+.due-label {
+  font-size: 14px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.due-input {
+  min-width: 0;
+  padding: 6px 10px;
+  font-size: 16px; /* 16px 미만이면 아이폰에서 자동 확대돼요 */
+  color: var(--ink);
+  background: #fff;
+  border: 2px solid var(--lavender);
+  border-radius: 10px;
+  outline: none;
+}
+
+.due-input:focus {
+  border-color: #b79bc9;
+}
+
+.todo-form__input {
+  flex: 1;
+  min-width: 0; /* 좁은 화면에서 입력창이 넘치지 않게 */
+  padding: 12px 14px;
+  font-size: 16px; /* 16px 미만이면 아이폰에서 자동 확대돼요 */
+  background: #fff9fc;
+  border: 3px solid var(--pink);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.todo-form__input:focus {
+  border-color: var(--pink-deep);
+}
+
+/* 강조색: '추가' 버튼 */
+.todo-form__btn {
+  padding: 0 18px;
+  font-size: 16px;
+  color: #fff;
+  border: 0;
+  transition: transform 0.08s, box-shadow 0.08s;
+  background: var(--accent);
+  box-shadow: 0 4px 0 var(--accent-press);
+  min-height: 48px;
+  border-radius: 14px;
+}
+
+.todo-form__btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--accent-press);
+}
+
+/* 🔁 반복 켜기/끄기 버튼 (입력 폼 아랫줄 왼쪽) */
+.repeat-toggle {
+  padding: 4px 12px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  background: #fff;
+  border: 2px solid var(--lavender);
+  border-radius: 999px;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.repeat-toggle.is-on {
+  color: var(--ink);
+  background: var(--mint);
+  border-color: #7fd1ae;
+}
+
+/* 반복 요일 칩: 매일 / 월 화 수 목 금 토 일
+   8칸 고정 배치라서 폭이 좁으면 칩이 조금씩 줄어들 뿐 줄이 바뀌지 않아요. (일요일만 밑으로 떨어지지 않게) */
+.repeat-days {
+  display: grid;
+  grid-template-columns: auto repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  max-width: 400px; /* 넓은 화면에서 칩이 너무 길쭉해지지 않게 */
+  padding-left: 4px;
+}
+
+.day-chip {
+  min-width: 0;
+  min-height: 36px; /* 손가락으로 누르기 편한 크기 */
+  padding: 4px 2px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  background: #f3f0f6;
+  border: 2px solid transparent;
+  border-radius: 999px;
+}
+
+.day-chip.is-on {
+  color: var(--ink);
+  background: var(--mint);
+  border-color: #7fd1ae;
+}
+
+.day-chip--all {
+  padding: 4px 12px;
+}
+
+/* 입력칸: 글자 + 📅 🔁 아이콘을 한 칸 안에 */
+.input-shell {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 4px;
+  background: #fff;
+  border: 2px solid #e6d8ee;
+  border-radius: 14px;
+  transition: border-color 0.2s;
+}
+
+.input-shell:focus-within {
+  border-color: #b79bc9;
+}
+
+.input-shell .todo-form__input {
+  padding: 12px 10px;
+  background: transparent;
+  border: 0;
+}
+
+.input-shell__hint {
+  flex: none;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: #8a4a00;
+  background: #ffe9c7;
+  border-radius: 999px;
+}
+
+.shell-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 44px;
+  padding: 0;
+  color: var(--ink-mute);
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+}
+
+.shell-btn:hover {
+  background: #f8f3fa;
+}
+
+.shell-btn.is-on {
+  color: #8a4a00;
+}
+
+.shell-btn--repeat.is-on {
+  color: #24664b;
+}
+
+/* 아이콘을 눌렀을 때 펼쳐지는 옵션 칸 */
+.form-option {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #fbf7fc;
+  border-radius: 14px;
+}
+
+.form-option--repeat {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.form-option--repeat .repeat-days {
+  padding-left: 0;
+}
+
+.form-option__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-option .due-label {
+  color: var(--ink-mute);
+}
+
+.option-clear {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+  color: var(--ink-mute);
+  background: #fff;
+  border: 2px solid #e6d8ee;
+  border-radius: 999px;
+}

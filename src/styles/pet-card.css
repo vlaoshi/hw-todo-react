@@ -1,0 +1,152 @@
+/* 다마고치 작은 카드 (평소 화면) */
+.pet-card {
+  position: relative;
+  overflow: hidden; /* 효과가 카드 밖으로 삐져나가지 않게 */
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  background: var(--card);
+  border: 3px solid var(--line);
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(205, 180, 219, 0.3);
+}
+
+/* 캐릭터 상자 (작은 LCD) */
+.pet-card__lcd {
+  --px: 5px; /* 16칸 × 5px = 80px 캐릭터 */
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  background: var(--lcd);
+  border: 3px solid #f2a7c3;
+  border-radius: 20px;
+}
+
+.pet-card.is-tired .pet-card__lcd {
+  background: #dde3d3;
+}
+
+/* ⤢ 버튼이 빠져서 오른쪽 여백은 필요 없어요 */
+.pet-card__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 0;
+}
+
+.pet-card__status {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pet-card__level {
+  font-family: "Press Start 2P", monospace;
+  font-size: 11px;
+  color: var(--accent);
+}
+
+.pet-card__stage {
+  font-size: 16px;
+}
+
+.pet-card__xp-text {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ink-mute);
+  white-space: nowrap;
+}
+
+.pet-card__xp {
+  height: 8px;
+  overflow: hidden;
+  background: #f1e4ee;
+  border-radius: 999px;
+}
+
+.pet-card__xp-fill {
+  height: 100%;
+  background: var(--mint);
+  border-radius: 999px;
+  transition: width 0.6s ease-out;
+}
+
+/* 말풍선 + 💬 말 걸기 */
+.pet-card__talk {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.pet-card__bubble {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 14px;
+  line-height: 1.4;
+  word-break: keep-all; /* 한글 단어가 중간에 끊기지 않게 */
+  overflow-wrap: anywhere;
+  background: #fff6fa;
+  border-radius: 12px;
+}
+
+.pet-card__bubble.is-pop {
+  animation: pop 0.35s ease-out;
+}
+
+.talk-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: #24664b;
+  background: #dcf5ea;
+  border: 2px solid #7fd1ae;
+  border-radius: 50%;
+}
+
+.talk-btn:active {
+  transform: scale(0.94);
+}
+
+/* 작은 카드에서의 연출 위치: 캐릭터(왼쪽) 쪽으로 */
+.pet-card .food {
+  left: 62px;
+  top: 50%;
+  animation-name: food-fly-card;
+}
+
+@keyframes food-fly-card {
+  0% { transform: translate(120px, -10px) scale(1.1) rotate(20deg); opacity: 0; }
+  20% { opacity: 1; }
+  80% { transform: translate(-50%, -50%) scale(0.9) rotate(-10deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.1); opacity: 0; }
+}
+
+.pet-card .float-text {
+  left: 62px;
+  top: 30%;
+}
+
+.pet-card .shock-mark {
+  left: 100px;
+  top: 12%;
+}
+
+.pet-card.is-flash {
+  animation: flash-card 0.9s ease-out;
+}
+
+@keyframes flash-card {
+  0%, 40% { background-color: #fff7d6; }
+  100% { background-color: var(--card); }
+}

@@ -1,0 +1,82 @@
+/* '지난 일 가져오기' 카드 (목록 위, 앞을 막지 않아요) */
+.checkin-card {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  background: #fff8ec;
+  border: 2px solid var(--yellow);
+  border-radius: 16px;
+}
+
+.checkin-card__head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.checkin-card__icon {
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.checkin-card__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: normal;
+}
+
+.checkin-card__desc {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--ink-mute);
+}
+
+.checkin-card__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  margin: 6px 0 2px;
+  padding: 0 6px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink-mute);
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+}
+
+.checkin-card__toggle:hover {
+  background: rgba(255, 229, 163, 0.4);
+}
+
+.checkin-card .checkin__list {
+  margin: 4px 0 8px;
+}
+
+.checkin-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.checkin-card__btn {
+  flex: 1 1 auto;
+  min-height: 44px;
+  padding: 0 14px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  background: #fff;
+  border: 2px solid var(--yellow);
+  border-radius: 12px;
+}
+
+.checkin-card__btn.is-primary {
+  color: #6b4500;
+  background: var(--yellow);
+}
+
+.checkin-card__btn:disabled {
+  opacity: 0.6;
+}

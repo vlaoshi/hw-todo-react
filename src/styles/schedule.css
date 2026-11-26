@@ -1,0 +1,157 @@
+/* 🔁 반복 중 칸 */
+.schedule-routines {
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  background: #f1fbf6;
+  border: 2px dashed #bfe9d4;
+  border-radius: var(--radius-md);
+}
+
+/* '🔁 반복 중' 접기/펴기 버튼 */
+.schedule-routines__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  padding: 0;
+  font-size: 15px;
+  text-align: left;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+}
+
+.schedule-routines__count {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.schedule-routines__arrow {
+  margin-left: auto;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.schedule-routines__list {
+  margin-top: 6px !important;
+}
+
+/* 접었을 때는 여백을 줄여요 */
+.schedule-routines.is-closed {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+/* 반복 할 일 보이기/숨기기 줄 */
+.schedule-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* 스케줄의 '반복 예정' 줄: 흐리게 */
+.schedule-item.is-preview .schedule-item__text {
+  color: var(--ink-soft);
+}
+
+.schedule-routines__list,
+.schedule-day__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.schedule-routines__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.schedule-routines__text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* 지난 날짜: 흐리게 (이전 달 기록이나 이번 달 지난 날) */
+.schedule-day.is-past {
+  opacity: 0.65;
+}
+
+/* 날짜 묶음 */
+.schedule-day {
+  margin-bottom: 10px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.schedule-day.is-today {
+  border-color: var(--pink);
+}
+
+/* 날짜 제목 (누르면 그날 할 일 화면으로) */
+.schedule-day__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 14px;
+  text-align: left;
+  color: var(--ink);
+  background: #fbf7fc;
+  border: 0;
+}
+
+.schedule-day.is-today .schedule-day__head {
+  background: #fff0f6;
+}
+
+.schedule-day__rel {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.schedule-day__go {
+  margin-left: auto;
+  font-size: 18px;
+  color: var(--ink-soft);
+}
+
+.schedule-day__list {
+  padding: 4px 12px 8px;
+}
+
+/* 일정 한 줄 */
+.schedule-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 14px;
+}
+
+.schedule-item + .schedule-item {
+  border-top: 1px dashed var(--line);
+}
+
+.schedule-item__text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.schedule-item.is-done .schedule-item__text {
+  color: var(--ink-soft);
+  text-decoration: line-through;
+}
+
+.schedule-item.is-due .schedule-item__text {
+  color: #a35b00;
+}
