@@ -15,3 +15,16 @@
   # - 데이터는 Firebase 보안 규칙과 백엔드의 로그인 토큰 검사로 보호돼요.
   # - 검사 기능 전체를 끄지 않고 이 값 하나만 빼서, 진짜 비밀값이 실수로 들어가면 계속 막아 줘요.
   SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES = "AIzaSyDKv5yBZIfs0CCkufgIBnqnJ94vyOOaKEY"
+
+# 서비스 워커(sw.js)와 설치 정보(manifest)는 브라우저가 오래 저장해 두면 새 버전이 늦게 반영돼요.
+# 항상 새로 확인하게 해요.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+    Cache-Control = "no-cache"

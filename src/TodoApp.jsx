@@ -43,6 +43,7 @@ import { makeTalkLine } from "./utils/talk.js";
 import { launchConfetti, playAnimation, spawnEffect } from "./lib/fx.js";
 import { loadSoundPref, markSoundSuggested, playSound, saveSoundPref, shouldSuggestSound } from "./lib/sound.js";
 import { getErrorMessage } from "./lib/auth.js";
+import { saveSnapshot } from "./lib/offline.js";
 import * as api from "./lib/api.js";
 import AppHeader from "./components/AppHeader.jsx";
 import CheckInCard from "./components/CheckInCard.jsx";
@@ -139,7 +140,7 @@ function getCarryMessage(count) {
   return pickRandom(MESSAGES.carry);
 }
 
-export default function TodoApp({ user, initialProfile, initialTodos, initialRoutines, onLogout }) {
+export default function TodoApp({ user, initialProfile, initialTodos, initialRoutines, startOffline = false, onLogout }) {
   /* ---------- 상태 ---------- */
 
   // 접속 정보는 처음 한 번만 계산해요. (useState의 초기화 함수는 한 번만 실행돼요)
@@ -169,6 +170,8 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
   const [tempMood, setTempMood] = useState(null); // 잠깐 동안만 보여 줄 표정 (happy, shocked …)
   // 아래쪽 알림 { id, text, actionLabel?, onAction?, sticky? } — 되돌리기, 저장 실패, 소리 제안
   const [toast, setToast] = useState(null);
+  // 오프라인(보기 전용): 인터넷이 끊겨 기억해 둔 데이터를 보여 주는 중이면 true. 적기·체크·지우기는 막아요.
+  const [offline, setOffline] = useState(startOffline);
   // 설정 (이 기기에만 기억): 혼잣말 빈도, 화면낭독기로 혼잣말 읽기
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [idleMode, setIdleMode] = useState(() => loadLocal(IDLE_MODE_KEY, "often"));
@@ -226,6 +229,44 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
   const showToast = (t) => setToast({ ...t, id: Date.now() });
   const closeToast = useCallback(() => setToast(null), []); // Toast의 타이머가 매번 다시 걸리지 않게 고정
   const closeSettings = useCallback(() => setSettingsOpen(false), []); // 설정 창의 Esc 처리가 매번 다시 걸리지 않게 고정
+
+  /* ---------- 오프라인 (보기 전용) ---------- */
+
+  // 끊긴 동안 바꾸려고 하면 안내해요. 바꿨다면 true를 돌려줘요(막았음).
+  function blockedOffline() {
+    if (!offline) return false;
+    showToast({ text: "인터넷에 연결되면 할 수 있어요 📴" });
+    return true;
+  }
+
+  // 인터넷이 끊기거나 다시 연결되면 알려 줘요.
+  useEffect(() => {
+    const goOffline = () => {
+      setOffline(true);
+      setToast({ id: Date.now(), text: "인터넷이 끊겼어요. 지금은 보기만 할 수 있어요 📴", sticky: true });
+    };
+    const goOnline = () => {
+      setOffline(false);
+      setToast({
+        id: Date.now(),
+        text: "다시 연결됐어요! 최신 내용으로 바꿀까요?",
+        actionLabel: "새로고침",
+        onAction: () => window.location.reload(),
+        sticky: true,
+      });
+    };
+    window.addEventListener("offline", goOffline);
+    window.addEventListener("online", goOnline);
+    return () => {
+      window.removeEventListener("offline", goOffline);
+      window.removeEventListener("online", goOnline);
+    };
+  }, []);
+
+  // 데이터가 바뀔 때마다 이 기기에 기억해 둬요. (다음에 오프라인으로 열 때 보여 줄 데이터)
+  useEffect(() => {
+    if (!offline) saveSnapshot(user.uid, { profile, todos, routines });
+  }, [offline, user.uid, profile, todos, routines]);
 
   /* ---------- 말하기, 표정, 소리 ---------- */
 
@@ -554,6 +595,7 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
   // [추가] 성공하면 true를 돌려줘요. (입력칸을 비울지 정하려고)
   // repeat: 반복이면 { days, endDate }, 보통 할 일이면 null
   async function handleAdd(text, dueDate, repeat) {
+    if (blockedOffline()) return false;
     const trimmed = text.trim().slice(0, MAX_TEXT_LENGTH);
     if (!trimmed) {
       speak(pickRandom(MESSAGES.emptyInput));
@@ -605,6 +647,7 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
 
   // [반복 그만하기] 앞으로 안 생기게만 하고, 이미 만든 할 일은 남겨요.
   function handleStopRoutine(routineId) {
+    if (blockedOffline()) return;
     setRoutines((list) => list.filter((r) => r.id !== routineId));
     speak(MESSAGES.routineStopped);
     sound("click");
@@ -613,6 +656,7 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
 
   // [완료/해제] 완료 +20 (+ 마감일 당일까지면 보너스 +5) / 해제하면 받은 만큼 모두 회수
   function handleToggle(id) {
+    if (blockedOffline()) return;
     const todo = todos.find((t) => t.id === id);
     if (!todo) return;
     const done = !todo.done;
@@ -685,6 +729,7 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
       (그 전에 화면을 닫거나 로그아웃하면 그때 바로 지워요)
   */
   function handleDelete(id, reason = "giveUp") {
+    if (blockedOffline()) return;
     const index = todos.findIndex((t) => t.id === id);
     const todo = todos[index];
     if (!todo) return;
@@ -739,6 +784,7 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
 
   // [⭐ 중요 표시] 그날 목록 맨 위에 고정 / 해제 (XP 변화 없음)
   function handleStar(id) {
+    if (blockedOffline()) return;
     const todo = todos.find((t) => t.id === id);
     if (!todo) return;
     const starred = !todo.starred;
@@ -756,6 +802,7 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
   // [수정] 글자와 마감일 (+ 보통 할 일을 반복 할 일로 바꾸기)
   // repeat: { days, endDate } 이면 이 할 일 날짜부터 반복을 만들고, 이 할 일을 그날의 반복 할 일로 연결해요.
   async function handleEdit(id, { text, dueDate, repeat }) {
+    if (blockedOffline()) return;
     const todo = todos.find((t) => t.id === id);
     if (!todo) return;
     if (dueDate && dueDate < todo.date) {
@@ -809,6 +856,7 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
 
   // [내일로 / 오늘로] XP -5, 넘긴 횟수 +1 (반복 할 일은 넘기기 없음)
   function handleCarry(id) {
+    if (blockedOffline()) return;
     const todo = todos.find((t) => t.id === id);
     if (!todo || todo.done) return;
     if (todo.routineId) {
@@ -855,6 +903,7 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
 
   // ids: 가져올 할 일 id 목록 (빈 배열이면 '그냥 두기')
   function handleCheckIn(ids) {
+    if (blockedOffline()) return;
     const today = todayStr();
     const picked = new Set(ids);
     const moved = todos.filter((t) => picked.has(t.id) && !t.done);
@@ -918,6 +967,7 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
 
   // text: 새길 문구 ("": 안 새기기, 기본 로고)
   function handleEngrave(text) {
+    if (blockedOffline()) return;
     setEngraveMode(null);
     setProfile((p) => ({ ...p, engraving: text }));
     if (text) {
@@ -978,6 +1028,11 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
       <main className={`app${atHome ? " is-home" : ""}`}>
         {/* 위쪽 바: 로고 + ⓘ 도움말 + 프로필 메뉴(효과음, 로그아웃) */}
         <AppHeader user={user} onOpenSettings={() => setSettingsOpen(true)} onLogout={onLogout} />
+        {offline && (
+          <p className="offline-banner" role="status">
+            오프라인이에요 · 마지막으로 본 내용을 보여 드려요
+          </p>
+        )}
         {/* 다마고치: 평소엔 작은 카드, 🏠를 누르면 원래 게임기 화면 (둘 다 같은 연출 ref를 받아요) */}
         <div className="pet-slot" ref={deviceRef}>
           {atHome ? (
@@ -1031,6 +1086,8 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
             onCarryInfo={handleCarryInfo}
             onStopRoutine={handleStopRoutine}
             onStar={handleStar}
+            readOnly={offline}
+            onBlocked={blockedOffline}
           />
         )}
 

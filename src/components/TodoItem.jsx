@@ -32,6 +32,8 @@ export default function TodoItem({
   onCarryInfo,
   onStopRoutine,
   onStar,
+  readOnly = false, // 오프라인(보기 전용)
+  onBlocked,
 }) {
   if (todo.isPreview) return <PreviewItem todo={todo} routine={routine} />;
   return (
@@ -46,6 +48,8 @@ export default function TodoItem({
       onCarryInfo={onCarryInfo}
       onStopRoutine={onStopRoutine}
       onStar={onStar}
+      readOnly={readOnly}
+      onBlocked={onBlocked}
     />
   );
 }
@@ -96,6 +100,8 @@ function RealItem({
   onCarryInfo,
   onStopRoutine,
   onStar,
+  readOnly,
+  onBlocked,
 }) {
   const today = todayStr();
   const isRoutine = !!todo.routineId;
@@ -110,6 +116,11 @@ function RealItem({
 
   // 사라지는 애니메이션을 보여 준 뒤 실제 동작을 해요. (빠르게 두 번 눌러도 한 번만)
   function removeThen(action) {
+    // 오프라인(보기 전용)이면 사라지는 애니메이션 없이 안내만 해요. (애니메이션 뒤에 막히면 할 일이 안 보이게 남아요)
+    if (readOnly) {
+      onBlocked?.();
+      return;
+    }
     if (removing) return;
     setRemoving(true);
     setTimeout(action, REMOVE_ANIMATION_MS);
@@ -124,6 +135,10 @@ function RealItem({
   }
 
   function startEdit() {
+    if (readOnly) {
+      onBlocked?.();
+      return;
+    }
     setOpen(false);
     setEditing(true);
   }
@@ -148,7 +163,7 @@ function RealItem({
   const SWIPE_MAX = 140;
 
   function onPointerDown(e) {
-    if (e.pointerType !== "touch" || editing || !canCarry) return;
+    if (e.pointerType !== "touch" || editing || !canCarry || readOnly) return;
     swipeRef.current = { x: e.clientX, y: e.clientY, active: false };
   }
 

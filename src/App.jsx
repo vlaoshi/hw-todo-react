@@ -17,6 +17,7 @@ import useAuth from "./hooks/useAuth.js";
 import { getErrorMessage, withTimeout } from "./lib/auth.js";
 import { loadProfile, loadRoutines, loadTodos, materializeRoutines } from "./lib/api.js";
 import { todayStr } from "./utils/date.js";
+import { isConnectionError, loadSnapshot, saveSnapshot } from "./lib/offline.js";
 import TodoApp from "./TodoApp.jsx";
 
 const noop = () => {};
@@ -64,22 +65,42 @@ function UserSession({ user, onLogout }) {
 
   useEffect(() => {
     let cancelled = false; // 불러오는 중에 로그아웃하면 결과를 버려요
+
+    // 인터넷이 끊겼으면: 이 기기에 기억해 둔 마지막 데이터로 '보기 전용' 시작 (없으면 오류 안내)
+    const startOffline = (error) => {
+      const snap = loadSnapshot(user.uid);
+      if (snap) {
+        setLoad({ status: "ready", profile: snap.profile, todos: snap.todos, routines: snap.routines, offline: true });
+      } else {
+        setLoad({ status: "error", message: getErrorMessage(error) });
+      }
+    };
+
+    if (navigator.onLine === false) {
+      startOffline({ code: "api/network" });
+      return;
+    }
+
     withTimeout(
       materializeRoutines(todayStr()).then(() =>
         Promise.all([loadProfile(), loadTodos(), loadRoutines()])
       )
     )
       .then(([profile, todos, routines]) => {
-        if (!cancelled) setLoad({ status: "ready", profile, todos, routines });
+        if (cancelled) return;
+        saveSnapshot(user.uid, { profile, todos, routines }); // 다음에 오프라인으로 열 때 보여 줄 데이터
+        setLoad({ status: "ready", profile, todos, routines });
       })
       .catch((error) => {
         console.error("데이터를 불러오지 못했어요:", error.code || error);
-        if (!cancelled) setLoad({ status: "error", message: getErrorMessage(error) });
+        if (cancelled) return;
+        if (isConnectionError(error)) startOffline(error);
+        else setLoad({ status: "error", message: getErrorMessage(error) });
       });
     return () => {
       cancelled = true;
     };
-  }, [attempt]);
+  }, [attempt, user.uid]);
 
   function retry() {
     setLoad({ status: "loading" });
@@ -93,6 +114,7 @@ function UserSession({ user, onLogout }) {
         initialProfile={load.profile}
         initialTodos={load.todos}
         initialRoutines={load.routines}
+        startOffline={!!load.offline}
         onLogout={onLogout}
       />
     );

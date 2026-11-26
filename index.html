@@ -6,11 +6,18 @@
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>다마고치 투두</title>
 
-    <!-- 브라우저 탭 아이콘: 파일 없이 알 이모지로 바로 만들어요 -->
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🥚%3C/text%3E%3C/svg%3E"
-    />
+    <!-- 브라우저 탭 아이콘: 앱 아이콘과 같은 픽셀 알 -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+
+    <!-- 앱 설치(PWA): 폰 홈 화면에 추가하면 주소창 없이 앱처럼 열려요 -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#ffd6e5" />
+    <!-- 아이폰: 홈 화면 아이콘과 앱처럼 열기 설정 -->
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="TAMA-DO" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
     <!-- 구글 폰트: 귀여운 한글 폰트(Jua) + 레트로 숫자 폰트(Press Start 2P) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

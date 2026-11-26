@@ -3228,3 +3228,14 @@ button.setting-row:hover {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* 오프라인 안내 줄 (위쪽 바 아래) */
+.offline-banner {
+  margin: -6px 0 0;
+  padding: 8px 14px;
+  font-size: 14px;
+  text-align: center;
+  color: #5a4590;
+  background: #ece4f7;
+  border-radius: 12px;
+}

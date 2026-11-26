@@ -69,7 +69,9 @@ export default function useAuth() {
           showGate("아이디로 다시 로그인해 주세요.");
           return;
         }
-        if (!(await ensureAccountSlot(firebaseUser))) {
+        // 인터넷이 끊겼으면 가입 명단(Firestore) 확인은 건너뛰고, 이 기기에 남은 로그인을 믿어요.
+        // (확인하려고 기다리면 오프라인에서 8초 동안 멈춰 있다가 로그인 화면으로 튕겨요. 서버는 연결되면 다시 검사해요)
+        if (navigator.onLine !== false && !(await ensureAccountSlot(firebaseUser))) {
           await logOut();
           showGate(getErrorMessage(appError("app/full")));
           return;

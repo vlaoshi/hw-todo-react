@@ -29,6 +29,8 @@ export default function TodoPanel({
   onCarryInfo,
   onStopRoutine,
   onStar,
+  readOnly = false, // 오프라인(보기 전용)이면 true: 지우기·넘기기·수정 전에 막아요
+  onBlocked,
 }) {
   const [showDone, setShowDone] = useState(false); // '완료 n개' 칸을 펼쳤는지
 
@@ -63,6 +65,8 @@ export default function TodoPanel({
             onCarryInfo={onCarryInfo}
             onStopRoutine={onStopRoutine}
             onStar={onStar}
+            readOnly={readOnly}
+            onBlocked={onBlocked}
           />
         ))}
       </ul>
@@ -111,6 +115,8 @@ export default function TodoPanel({
                   onCarryInfo={onCarryInfo}
                   onStopRoutine={onStopRoutine}
                   onStar={onStar}
+                  readOnly={readOnly}
+                  onBlocked={onBlocked}
                 />
               ))}
             </ul>
