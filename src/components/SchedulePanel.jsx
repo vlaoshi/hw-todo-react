@@ -4,10 +4,11 @@
   - 그 아래: ◀ 2026년 11월 ▶ → 날짜 제목 → 그날의 할 일 / 마감 (지난 날짜는 흐리게)
     '반복 할 일 포함/제외' 버튼으로 바꿔요. 포함하면 오늘 이후 날짜의 반복 예정도 보여 줘요. (기본은 제외)
   - 날짜 제목을 누르면 그날의 할 일 화면으로 이동해요. (onOpenDate)
+  - 예전 달로 가면 그 달 기록을 더 불러와 달라고 알려요. (onNeedDate)
   - 여기서는 보기만 해요. 체크·수정은 할 일 화면에서 해요.
   - 접기/보이기 설정은 이 브라우저에 기억해요. (개인 화면 설정이라 DB에는 저장하지 않아요)
 */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "./Icons.jsx";
 import { formatLong, formatShort, formatTime, todayStr } from "../utils/date.js";
 import { formatRoutine, isRoutineEnded } from "../utils/game.js";
@@ -34,7 +35,7 @@ function usePref(key, defaultValue) {
   return [value, update];
 }
 
-export default function SchedulePanel({ todos, routines, tabs, onOpenDate }) {
+export default function SchedulePanel({ todos, routines, tabs, onOpenDate, onNeedDate }) {
   const today = todayStr();
   const [routinesOpen, setRoutinesOpen] = usePref("tamado:schedule:routinesOpen", true);
   const [showRoutines, setShowRoutines] = usePref("tamado:schedule:showRoutines", false);
@@ -42,6 +43,10 @@ export default function SchedulePanel({ todos, routines, tabs, onOpenDate }) {
   const activeRoutines = routines.filter((r) => !isRoutineEnded(r, today));
   const [month, setMonth] = useState(() => currentMonth(today)); // 보고 있는 달 "YYYY-MM"
   const isThisMonth = month === currentMonth(today);
+  // 보는 달의 기록이 아직 없으면 더 불러와 달라고 알려요. (onNeedDate: 그 날짜부터 기록이 있게)
+  useEffect(() => {
+    onNeedDate?.(`${month}-01`);
+  }, [month, onNeedDate]);
   const days = getScheduleDays(todos, month, today, { routines: activeRoutines, includeRoutines: showRoutines });
 
   return (

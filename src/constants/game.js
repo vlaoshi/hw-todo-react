@@ -198,3 +198,7 @@ export const FOODS = ["🍎", "🍰", "🍙", "🍩", "🍓", "🍪"];
 
 // 폭죽 색종이 색
 export const CONFETTI_COLORS = ["#ffc8dd", "#cdb4db", "#a8e6cf", "#ffe5a3", "#bde0fe", "#ff8fab"];
+
+// 앱을 열 때 불러오는 지난 기록 기간 (일). 안 끝낸 일은 날짜와 상관없이 모두 불러와요.
+// 더 예전 날짜를 보면 그 기간을 그때 더 불러와요. (hooks/useOlderTodos.js)
+export const RECENT_DAYS = 30;

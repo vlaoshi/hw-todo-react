@@ -23,7 +23,8 @@
   ▶ 함수 목록 (모두 async)
     loadProfile()                 프로필 { xp, stage, lastCheckInDate } (없으면 서버가 기본값으로 만들어 줘요)
     updateProfile({ xpDelta, lastCheckInDate })  보낸 것만 반영
-    loadTodos()                   할 일 목록 (최신순)
+    loadTodos({ from, to })       할 일 목록 (최신순)
+                                  from만: 그날 이후 + 안 끝낸 일 전부 / from+to: 그 기간만 / 둘 다 없으면 전체
     addTodo(todo)                 할 일 추가
     updateTodo(id, patch)         할 일의 일부 내용만 수정
     deleteTodo(id)                할 일 삭제
@@ -148,8 +149,11 @@ export async function updateProfile({ xpDelta = 0, lastCheckInDate, engraving } 
 }
 
 // 내 할 일 전체 (서버가 최신순으로 보내 줘요)
-export async function loadTodos() {
-  const todos = await apiRequest("/todos");
+export async function loadTodos({ from, to } = {}) {
+  const query = new URLSearchParams();
+  if (from) query.set("from", from);
+  if (to) query.set("to", to);
+  const todos = await apiRequest("/todos" + (query.size ? `?${query}` : ""));
   return todos.map(fromServerTodo);
 }
 

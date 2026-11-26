@@ -16,7 +16,8 @@ import StatusGate from "./components/StatusGate.jsx";
 import useAuth from "./hooks/useAuth.js";
 import { getErrorMessage, withTimeout } from "./lib/auth.js";
 import { loadProfile, loadRoutines, loadTodos, materializeRoutines } from "./lib/api.js";
-import { todayStr } from "./utils/date.js";
+import { addDays, todayStr } from "./utils/date.js";
+import { RECENT_DAYS } from "./constants/game.js";
 import { isConnectionError, loadSnapshot, saveSnapshot } from "./lib/offline.js";
 import TodoApp from "./TodoApp.jsx";
 
@@ -83,7 +84,8 @@ function UserSession({ user, onLogout }) {
 
     withTimeout(
       materializeRoutines(todayStr()).then(() =>
-        Promise.all([loadProfile(), loadTodos(), loadRoutines()])
+        // 할 일은 최근 기록만 불러와요. (더 예전 기록은 그 날짜를 볼 때 TodoApp이 더 불러와요)
+        Promise.all([loadProfile(), loadTodos({ from: addDays(todayStr(), -RECENT_DAYS) }), loadRoutines()])
       )
     )
       .then(([profile, todos, routines]) => {

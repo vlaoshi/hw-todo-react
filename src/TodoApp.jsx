@@ -11,6 +11,7 @@
     hooks/usePetFx.js        다마고치 연출 (말하기, 표정, 소리, 음식·진화, 미니 펫, 3초 카운트다운)
     hooks/useIdleTalk.js     혼잣말·리마인드
     hooks/useOffline.js      오프라인(보기 전용), 데이터 기억
+    hooks/useOlderTodos.js   예전 기록 더 불러오기 (처음엔 최근 30일만 불러와요)
     hooks/useTodoActions.js  할 일 동작 (추가·완료·지우기·되돌리기·넘기기·별표·수정·지난 일·각인)
 
   다마고치 기분
@@ -37,6 +38,7 @@ import * as api from "./lib/api.js";
 import useDevicePrefs from "./hooks/useDevicePrefs.js";
 import useIdleTalk from "./hooks/useIdleTalk.js";
 import useOffline from "./hooks/useOffline.js";
+import useOlderTodos from "./hooks/useOlderTodos.js";
 import usePetFx from "./hooks/usePetFx.js";
 import useToast from "./hooks/useToast.js";
 import useTodoActions from "./hooks/useTodoActions.js";
@@ -115,6 +117,12 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
     atHome,
   });
   const { offline, blockedOffline } = useOffline({ startOffline, uid: user.uid, profile, todos, routines, showToast });
+  const ensureLoaded = useOlderTodos({ offline, setTodos, showToast });
+
+  // 보고 있는 날짜가 불러온 기간보다 예전이면 그 기록을 더 불러와요.
+  useEffect(() => {
+    ensureLoaded(selectedDate);
+  }, [selectedDate, ensureLoaded]);
 
   /* ---------- 화면에 쓸 값 ---------- */
 
@@ -282,6 +290,7 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
             routines={routines}
             tabs={<ViewTabs view={view} onChange={handleViewChange} />}
             onOpenDate={handleOpenDate}
+            onNeedDate={ensureLoaded}
           />
         ) : (
           <TodoPanel
