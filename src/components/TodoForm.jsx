@@ -2,20 +2,23 @@
   할 일 입력 폼: 지금 보고 있는 날짜에 추가돼요.
   - 입력값은 React state로 관리해요. (제어 컴포넌트)
   - 평소엔 글자 입력칸만 보이고, 칸 안의 아이콘을 누르면 옵션이 펼쳐져요. (메인 화면 개선안 ④)
-      📅 마감일 정하기   /   🔁 반복 (요일 + 반복 종료일, 반복 할 일은 마감일이 없어요)
-  - onAdd(text, dueDate, repeat)가 true를 돌려주면(성공) 입력칸을 비워요.
+      🕒 시간 정하기   /   📅 마감일 정하기   /   🔁 반복 (요일 + 반복 종료일, 반복 할 일은 시간·마감일이 없어요)
+  - onAdd(text, dueDate, repeat, time)가 true를 돌려주면(성공) 입력칸을 비워요.
     repeat: 반복이 꺼져 있으면 null, 켜져 있으면 { days: 요일 번호 배열(0 일 ~ 6 토), endDate: 종료일 또는 null }
+    time: 시간을 정했으면 "HH:MM", 아니면 null
     반복 추가는 서버 응답을 기다려서 Promise를 돌려줄 수도 있어요.
 */
 import { useState } from "react";
 import { MAX_TEXT_LENGTH } from "../constants/game.js";
-import { formatShort } from "../utils/date.js";
+import { formatShort, formatTime } from "../utils/date.js";
 import { weekdayOf } from "../utils/game.js";
 import DayChips from "./DayChips.jsx";
-import { CalendarIcon, RepeatIcon } from "./Icons.jsx";
+import { CalendarIcon, ClockIcon, RepeatIcon } from "./Icons.jsx";
 
 export default function TodoForm({ selectedDate, onAdd }) {
   const [text, setText] = useState("");
+  const [timeOpen, setTimeOpen] = useState(false); // 시간 칸을 펼쳤는지
+  const [time, setTime] = useState("");
   const [dueOpen, setDueOpen] = useState(false); // 마감일 칸을 펼쳤는지
   const [dueDate, setDueDate] = useState("");
   const [repeat, setRepeat] = useState(false);
@@ -23,9 +26,17 @@ export default function TodoForm({ selectedDate, onAdd }) {
   const [endDate, setEndDate] = useState(""); // 반복 종료일 (비우면 계속 반복)
   const [saving, setSaving] = useState(false); // 반복 추가는 서버 응답을 기다리는 동안 버튼을 잠가요
 
+  // 🕒 누르기: 시간 칸 열고 닫기 (반복과 함께 쓰지 않아요, 칸은 하나씩만 펼쳐요)
+  function toggleTime() {
+    setTimeOpen(!timeOpen);
+    setDueOpen(false);
+    setRepeat(false);
+  }
+
   // 📅 누르기: 마감일 칸 열고 닫기 (반복과 함께 쓰지 않아요)
   function toggleDue() {
     setDueOpen(!dueOpen);
+    setTimeOpen(false);
     setRepeat(false);
   }
 
@@ -34,6 +45,7 @@ export default function TodoForm({ selectedDate, onAdd }) {
     if (!repeat && days.length === 0) setDays([weekdayOf(selectedDate)]);
     setRepeat(!repeat);
     setDueOpen(false);
+    setTimeOpen(false);
   }
 
   async function handleSubmit(e) {
@@ -45,10 +57,13 @@ export default function TodoForm({ selectedDate, onAdd }) {
       const ok = await onAdd(
         text,
         repeat ? null : dueDate || null,
-        repeat ? { days, endDate: endDate || null } : null
+        repeat ? { days, endDate: endDate || null } : null,
+        repeat ? null : time || null
       );
       if (ok) {
         setText("");
+        setTimeOpen(false);
+        setTime("");
         setDueOpen(false);
         setDueDate("");
         setRepeat(false);
@@ -61,6 +76,7 @@ export default function TodoForm({ selectedDate, onAdd }) {
   }
 
   const hasDue = !repeat && !!dueDate;
+  const hasTime = !repeat && !!time;
 
   return (
     // noValidate: 브라우저 기본 경고 대신 다마고치가 직접 안내해요
@@ -75,12 +91,23 @@ export default function TodoForm({ selectedDate, onAdd }) {
             id="todoInput"
             className="todo-form__input"
             maxLength={MAX_TEXT_LENGTH}
-            placeholder="할 일을 적어 주세요"
+            placeholder="할 일 입력"
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
-          {/* 마감일을 정해 두면 아이콘 옆에 날짜가 작게 보여요 */}
+          {/* 시간·마감일을 정해 두면 아이콘 옆에 작게 보여요 */}
+          {hasTime && !timeOpen && <span className="input-shell__hint">{formatTime(time)}</span>}
           {hasDue && !dueOpen && <span className="input-shell__hint">{formatShort(dueDate)}</span>}
+          <button
+            type="button"
+            className={`shell-btn${timeOpen || hasTime ? " is-on" : ""}`}
+            aria-label="시간 정하기"
+            aria-pressed={timeOpen}
+            aria-controls="timeOption"
+            onClick={toggleTime}
+          >
+            <ClockIcon />
+          </button>
           <button
             type="button"
             className={`shell-btn${dueOpen || hasDue ? " is-on" : ""}`}
@@ -106,6 +133,27 @@ export default function TodoForm({ selectedDate, onAdd }) {
           추가
         </button>
       </div>
+
+      {/* 🕒 시간 (선택) */}
+      {timeOpen && !repeat && (
+        <div className="form-option" id="timeOption">
+          <label htmlFor="timeInput" className="due-label">
+            시간
+          </label>
+          <input
+            type="time"
+            id="timeInput"
+            className="due-input"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+          />
+          {time && (
+            <button type="button" className="option-clear" onClick={() => setTime("")}>
+              지우기
+            </button>
+          )}
+        </div>
+      )}
 
       {/* 📅 마감일 (선택) */}
       {dueOpen && !repeat && (

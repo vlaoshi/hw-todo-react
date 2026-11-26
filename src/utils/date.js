@@ -44,6 +44,13 @@ export function formatShort(str) {
   return `${m}/${d}`;
 }
 
+// "14:30" → "오후 2:30", "09:05" → "오전 9:05", "00:00" → "오전 12:00"
+export function formatTime(str) {
+  const [h, m] = str.split(":").map(Number);
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h < 12 ? "오전" : "오후"} ${hour12}:${String(m).padStart(2, "0")}`;
+}
+
 // "2026-11-13" → "11월 13일 (금)"
 export function formatLong(str) {
   const date = fromDateStr(str);

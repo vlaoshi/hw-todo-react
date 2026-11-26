@@ -9,7 +9,7 @@
 */
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "./Icons.jsx";
-import { formatLong, formatShort, todayStr } from "../utils/date.js";
+import { formatLong, formatShort, formatTime, todayStr } from "../utils/date.js";
 import { formatRoutine, isRoutineEnded } from "../utils/game.js";
 import { addMonths, currentMonth, formatMonth, getScheduleDays, relativeDayLabel } from "../utils/schedule.js";
 
@@ -145,7 +145,10 @@ export default function SchedulePanel({ todos, routines, tabs, onOpenDate }) {
                 <span className="schedule-item__mark" aria-hidden="true">
                   {kind === "due" ? "⏰" : todo.done ? "✅" : todo.starred ? "⭐" : todo.routineId ? "🔁" : "▫️"}
                 </span>
-                <span className="schedule-item__text">{todo.text}</span>
+                <span className="schedule-item__text">
+                  {todo.time && <span className="todo-time">{formatTime(todo.time)}</span>}
+                  {todo.text}
+                </span>
                 {kind === "due" && <span className="badge badge--due is-soon">마감</span>}
                 {todo.isPreview && <span className="badge badge--repeat">반복 예정</span>}
                 {kind === "plan" && todo.dueDate && !todo.done && todo.dueDate !== todo.date && (

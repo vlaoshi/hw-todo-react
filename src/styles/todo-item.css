@@ -399,3 +399,16 @@ button.todo-text {
   color: #fff;
   background: #4a86c0;
 }
+
+/* 🕒 정한 시간: 글자 앞에 작게 (할 일 줄과 스케줄이 같이 써요) */
+.todo-time {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 7px;
+  font-size: 12px;
+  color: #3a5a8c;
+  background: #e3efff;
+  border-radius: 999px;
+  vertical-align: 2px;
+  white-space: nowrap;
+}

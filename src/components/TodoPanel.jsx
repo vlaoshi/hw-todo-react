@@ -7,7 +7,7 @@
 */
 import { useState } from "react";
 import { todayStr } from "../utils/date.js";
-import { getDayTodos, getRoutinePreviews, starredFirst } from "../utils/game.js";
+import { getDayTodos, getRoutinePreviews, sortDayTodos } from "../utils/game.js";
 import DateNav from "./DateNav.jsx";
 import { ChevronDown, ChevronRight } from "./Icons.jsx";
 import TodoForm from "./TodoForm.jsx";
@@ -39,7 +39,7 @@ export default function TodoPanel({
   // 미래 날짜면 반복 예정 미리보기를 붙여요.
   const previews = selectedDate > todayStr() ? getRoutinePreviews(routines, todos, selectedDate) : [];
   // 남은 할 일: 중요한 일(⭐)이 맨 위
-  const activeTodos = [...starredFirst(dayTodos.filter((t) => !t.done)), ...previews];
+  const activeTodos = [...sortDayTodos(dayTodos.filter((t) => !t.done)), ...previews];
 
   // 반복 id → 반복 틀 (배지에 요일을 보여 주고, '반복 그만하기'에 써요)
   const routineById = new Map(routines.map((r) => [r.id, r]));

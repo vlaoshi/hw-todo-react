@@ -23,7 +23,7 @@ import { TOAST_MS } from "../components/Toast.jsx";
 import * as api from "../lib/api.js";
 
 // 새 보통 할 일 객체 만들기 (화면에 바로 보여 주고, 서버 저장은 뒤에서 해요)
-function createTodo(text, date, dueDate) {
+function createTodo(text, date, dueDate, time) {
   const now = Date.now();
   return {
     id: createId(), // 임시 아이디 (서버가 정한 아이디는 api.js가 따로 기억해요)
@@ -33,6 +33,7 @@ function createTodo(text, date, dueDate) {
     completedAt: null,
     date,
     dueDate,
+    time,
     originDate: date,
     carryCount: 0,
     bonusXp: 0,
@@ -134,8 +135,8 @@ export default function useTodoActions(ctx) {
   /* ---------- 할 일 기능 ---------- */
 
   // [추가] 성공하면 true를 돌려줘요. (입력칸을 비울지 정하려고)
-  // repeat: 반복이면 { days, endDate }, 보통 할 일이면 null
-  async function handleAdd(text, dueDate, repeat) {
+  // repeat: 반복이면 { days, endDate }, 보통 할 일이면 null / time: "HH:MM" 또는 null
+  async function handleAdd(text, dueDate, repeat, time = null) {
     if (blockedOffline()) return false;
     const trimmed = text.trim().slice(0, MAX_TEXT_LENGTH);
     if (!trimmed) {
@@ -148,7 +149,7 @@ export default function useTodoActions(ctx) {
       speak(MESSAGES.dueInvalid);
       return false;
     }
-    const todo = createTodo(trimmed, selectedDate, dueDate); // 지금 보고 있는 날짜에 추가
+    const todo = createTodo(trimmed, selectedDate, dueDate, time); // 지금 보고 있는 날짜에 추가
     setTodos((list) => [todo, ...list]); // 맨 위에 추가
     flashMood("happy");
     speak(pickRandom(MESSAGES.add));
@@ -340,9 +341,9 @@ export default function useTodoActions(ctx) {
     persist(api.updateTodo(id, { starred }));
   }
 
-  // [수정] 글자와 마감일 (+ 보통 할 일을 반복 할 일로 바꾸기)
+  // [수정] 글자, 마감일, 시간 (+ 보통 할 일을 반복 할 일로 바꾸기)
   // repeat: { days, endDate } 이면 이 할 일 날짜부터 반복을 만들고, 이 할 일을 그날의 반복 할 일로 연결해요.
-  async function handleEdit(id, { text, dueDate, repeat }) {
+  async function handleEdit(id, { text, dueDate, time = null, repeat }) {
     if (blockedOffline()) return;
     const todo = todos.find((t) => t.id === id);
     if (!todo) return;
@@ -350,10 +351,10 @@ export default function useTodoActions(ctx) {
       speak(MESSAGES.dueInvalid);
       return;
     }
-    const textChanged = text !== todo.text || dueDate !== (todo.dueDate || null);
-    if (textChanged) {
-      patchTodo(id, { text, dueDate });
-      persist(api.updateTodo(id, { text, dueDate }));
+    const changed = text !== todo.text || dueDate !== (todo.dueDate || null) || time !== (todo.time || null);
+    if (changed) {
+      patchTodo(id, { text, dueDate, time });
+      persist(api.updateTodo(id, { text, dueDate, time }));
     }
     if (!repeat) {
       speak(pickRandom(MESSAGES.edit));

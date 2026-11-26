@@ -40,6 +40,13 @@ export const CalendarIcon = (p) => (
   </svg>
 );
 
+export const ClockIcon = (p) => (
+  <svg {...base} {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 7.5V12l3 2" />
+  </svg>
+);
+
 export const RepeatIcon = (p) => (
   <svg {...base} {...p}>
     <path d="M17 2l3 3-3 3" />

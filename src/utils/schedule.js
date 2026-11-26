@@ -6,7 +6,7 @@
     켜면 실제로 만들어진 반복 할 일 + 오늘 이후 날짜의 '반복 예정' 미리보기를 넣어요.
 */
 import { addDays, daysBetween, todayStr } from "./date.js";
-import { getRoutinePreviews } from "./game.js";
+import { compareTime, getRoutinePreviews } from "./game.js";
 
 // "2026-11" → "2026년 11월"
 export function formatMonth(month) {
@@ -57,7 +57,8 @@ export function getScheduleDays(todos, month, today = todayStr(), { routines = [
     }
   }
 
-  // 날짜 안에서는: ⭐ 중요한 일 → 못 한 일 → 반복 예정 → 마감 → 완료한 일, 같은 종류끼리는 먼저 만든 순서
+  // 날짜 안에서는: ⭐ 중요한 일 → 못 한 일 → 반복 예정 → 마감 → 완료한 일
+// 같은 종류끼리는 시간을 정한 일(이른 시간부터) → 먼저 만든 순서
   const order = (item) =>
     item.todo.done ? 4 : item.kind === "due" ? 3 : item.todo.isPreview ? 2 : item.todo.starred ? 0 : 1;
 
@@ -65,7 +66,12 @@ export function getScheduleDays(todos, month, today = todayStr(), { routines = [
     date,
     items: byDate
       .get(date)
-      .sort((a, b) => order(a) - order(b) || (a.todo.createdAt ?? 0) - (b.todo.createdAt ?? 0)),
+      .sort(
+        (a, b) =>
+          order(a) - order(b) ||
+          compareTime(a.todo, b.todo) ||
+          (a.todo.createdAt ?? 0) - (b.todo.createdAt ?? 0)
+      ),
   }));
 }
 

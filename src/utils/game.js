@@ -169,9 +169,16 @@ export function getDayTodos(todos, selectedDate) {
   );
 }
 
-// 중요한 일(⭐)을 맨 위로 올려요. 나머지 순서는 그대로 둬요. (sort는 같은 값끼리 순서를 지켜요)
-export function starredFirst(todos) {
-  return [...todos].sort((a, b) => Number(!!b.starred) - Number(!!a.starred));
+// 시간 순서 비교: 시간을 정한 일이 먼저, 그 안에서는 이른 시간부터 ("HH:MM"은 글자 비교로 순서가 맞아요)
+export function compareTime(a, b) {
+  if (!a.time || !b.time) return Number(!a.time) - Number(!b.time);
+  return a.time < b.time ? -1 : a.time > b.time ? 1 : 0;
+}
+
+// 그날 할 일 순서: ⭐ 중요한 일 → 시간을 정한 일(이른 시간부터) → 나머지
+// 같은 값끼리는 원래 순서를 지켜요. (sort는 안정 정렬이에요)
+export function sortDayTodos(todos) {
+  return [...todos].sort((a, b) => Number(!!b.starred) - Number(!!a.starred) || compareTime(a, b));
 }
 
 // 마감일 표시 정보: { text, cls } 또는 null
