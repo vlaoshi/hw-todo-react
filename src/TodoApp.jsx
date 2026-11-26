@@ -21,7 +21,7 @@
     모아 둔 반응(밥 먹기, XP, 진화)을 한 번에 보여 줘요.
     ※ XP는 체크하는 순간 바로 저장해요. 미뤄지는 건 '보여 주는 연출'뿐이에요.
 */
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CARRY_NAG_COUNT, COUNTDOWN_SECONDS, FOODS, MAX_TEXT_LENGTH, STAGES, XP_RULES } from "./constants/game.js";
 import { MESSAGES } from "./constants/messages.js";
 import { addDays, formatShort, todayStr } from "./utils/date.js";
@@ -41,18 +41,23 @@ import {
 import { makeReminder } from "./utils/reminders.js";
 import { makeTalkLine } from "./utils/talk.js";
 import { launchConfetti, playAnimation, spawnEffect } from "./lib/fx.js";
-import { loadSoundPref, playSound, saveSoundPref } from "./lib/sound.js";
+import { loadSoundPref, markSoundSuggested, playSound, saveSoundPref, shouldSuggestSound } from "./lib/sound.js";
 import { getErrorMessage } from "./lib/auth.js";
 import * as api from "./lib/api.js";
-import CheckInModal from "./components/CheckInModal.jsx";
+import AppHeader from "./components/AppHeader.jsx";
+import CheckInCard from "./components/CheckInCard.jsx";
+import EngraveModal from "./components/EngraveModal.jsx";
+import SettingsModal from "./components/SettingsModal.jsx";
 import Device from "./components/Device.jsx";
 import MiniPet from "./components/MiniPet.jsx";
+import PetCard from "./components/PetCard.jsx";
 import SchedulePanel from "./components/SchedulePanel.jsx";
 import TodoPanel from "./components/TodoPanel.jsx";
+import Toast, { TOAST_MS } from "./components/Toast.jsx";
 import ViewTabs from "./components/ViewTabs.jsx";
 
-// 한동안 아무 말이 없으면 혼잣말을 해요. (이 시간만큼 조용하면)
-const IDLE_TALK_MS = 30000;
+// 한동안 아무 말이 없으면 혼잣말을 해요. 설정의 '혼잣말 빈도'에 따라 기다리는 시간이 달라요. (끄기면 안 해요)
+const IDLE_TALK_MS = { often: 30000, sometimes: 60000 };
 // 혼잣말할 때 다가오는 일정을 말할 확률 (나머지는 평소 혼잣말)
 const IDLE_REMIND_CHANCE = 0.7;
 // 미니 말풍선을 보여 주는 시간
@@ -110,6 +115,24 @@ function getIdleLine(tiredReason, xp) {
   return pickRandom(MESSAGES.idle);
 }
 
+// 이 기기에만 기억하는 설정 (혼잣말 빈도, 화면낭독기 읽기) — 저장소를 못 쓰면 기본값
+function loadLocal(key, fallback) {
+  try {
+    return localStorage.getItem(key) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+function saveLocal(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* 저장 못 해도 지금 화면에서는 동작해요 */
+  }
+}
+const IDLE_MODE_KEY = "tamado:idleTalk"; // "often" | "sometimes" | "off"
+const SR_IDLE_KEY = "tamado:srIdle"; // "1"이면 화면낭독기가 혼잣말도 읽어요
+
 // 넘기기 대사: 같은 할 일을 여러 번 넘기면 잔소리
 function getCarryMessage(count) {
   if (count >= CARRY_NAG_COUNT) return pickRandom(MESSAGES.carryNag).replace("{n}", String(count));
@@ -131,15 +154,27 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
   const [todos, setTodos] = useState(initialTodos);
   const [routines, setRoutines] = useState(initialRoutines);
   const [selectedDate, setSelectedDate] = useState(todayStr);
-  const [filter, setFilter] = useState("all");
   const [view, setView] = useState("todo"); // 아래쪽 패널: "todo"(할 일) | "schedule"(스케줄)
   const [bubbleText, setBubbleText] = useState(() =>
     getGreeting(initialProfile, initialTodos, visit.absent)
   );
   const [soundOn, setSoundOn] = useState(loadSoundPref);
+  // 🏠 집(원래 게임기 화면)에 들어가 있는지 — 기억하지 않고, 열 때마다 화면 크기로 정해요.
+  // 큰 화면(900px 이상)은 공간이 넉넉해서 게임기가 기본, 폰은 할 일이 먼저 보이게 작은 카드가 기본
+  const [atHome, setAtHome] = useState(() => window.matchMedia?.("(min-width: 900px)").matches ?? false);
   const [absent, setAbsent] = useState(visit.absent); // 첫 완료를 하면 false (기운 회복)
   const [checkIn, setCheckIn] = useState(visit.candidates.length ? visit.candidates : null);
+  // 게임기 각인 창: "first"(처음 안내) | "edit"(바꾸기) | null. 각인을 아직 안 물어봤으면(null) 처음 안내를 띄워요.
+  const [engraveMode, setEngraveMode] = useState(() => (initialProfile.engraving == null ? "first" : null));
   const [tempMood, setTempMood] = useState(null); // 잠깐 동안만 보여 줄 표정 (happy, shocked …)
+  // 아래쪽 알림 { id, text, actionLabel?, onAction?, sticky? } — 되돌리기, 저장 실패, 소리 제안
+  const [toast, setToast] = useState(null);
+  // 설정 (이 기기에만 기억): 혼잣말 빈도, 화면낭독기로 혼잣말 읽기
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [idleMode, setIdleMode] = useState(() => loadLocal(IDLE_MODE_KEY, "often"));
+  const [srIdle, setSrIdle] = useState(() => loadLocal(SR_IDLE_KEY, "0") === "1");
+  // 화면낭독기가 읽을 문장 (눈에 안 보이는 읽기 칸). 혼잣말은 srIdle이 켜졌을 때만 여기에 넣어요.
+  const [announce, setAnnounce] = useState("");
 
   // 미니 다마고치와 카운트다운
   const [deviceVisible, setDeviceVisible] = useState(true); // 게임기 LCD가 60% 이상 보이는지
@@ -159,6 +194,7 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
   const miniBodyRef = useRef(null);
   const miniEffectsRef = useRef(null);
   const confettiRef = useRef(null);
+  const petFxRefs = { screen: screenRef, bubble: bubbleRef, pet: petRef, effectLayer: effectLayerRef };
 
   const xpRef = useRef(initialProfile.xp); // 실제 XP (연속 클릭에도 정확하게 단계를 계산하려고)
   const soundOnRef = useRef(soundOn);
@@ -171,6 +207,8 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
   const miniTalkTimerRef = useRef(null);
   const lastSpeakRef = useRef(0); // 마지막으로 말한 시각 (혼잣말 타이밍 계산용)
   const lastReminderRef = useRef(null); // 마지막으로 리마인드한 일정
+  // 되돌리기를 기다리는 지우기: 할 일 id → { timer, commit } (5초 뒤 서버에서 지워요)
+  const pendingDeletesRef = useRef(new Map());
   // effect 안에서 부를 함수 (항상 최신 버전을 가리키게 매번 바꿔 끼워요)
   const speakRef = useRef(null);
   const revealRef = useRef(null);
@@ -183,11 +221,19 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
   const tiredReason = getTiredReason(todos, { absent });
   const mood = tempMood ?? (tiredReason ? "tired" : "normal");
 
+  /* ---------- 아래쪽 알림 ---------- */
+
+  const showToast = (t) => setToast({ ...t, id: Date.now() });
+  const closeToast = useCallback(() => setToast(null), []); // Toast의 타이머가 매번 다시 걸리지 않게 고정
+  const closeSettings = useCallback(() => setSettingsOpen(false), []); // 설정 창의 Esc 처리가 매번 다시 걸리지 않게 고정
+
   /* ---------- 말하기, 표정, 소리 ---------- */
 
   // 말풍선에 대사 띄우기 (큰 말풍선 + 미니 말풍선 4초)
-  function speak(text) {
+  // idle: 혼잣말이면 true → 화면낭독기 읽기 설정이 켜졌을 때만 읽어 줘요. 그 밖의 대답은 항상 읽어요.
+  function speak(text, { idle = false } = {}) {
     setBubbleText(text);
+    if (!idle || srIdle) setAnnounce(text);
     lastSpeakRef.current = Date.now();
     playAnimation(bubbleRef.current, "is-pop");
     setMiniTalking(true);
@@ -405,32 +451,40 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [atHome]); // 카드 ↔ 게임기가 바뀌면 감시할 화면도 바뀌어서 다시 연결해요
 
   // 접속 인사를 한 시각부터 혼잣말 시간을 세고, 화면이 사라질 때(로그아웃 등) 타이머를 정리해요.
   useEffect(() => {
     lastSpeakRef.current = Date.now();
+    const pendingDeletes = pendingDeletesRef.current;
     return () => {
       clearTimeout(moodTimerRef.current);
       clearTimeout(miniTalkTimerRef.current);
       if (batchRef.current) clearInterval(batchRef.current.timer);
+      // 되돌리기를 기다리던 지우기는 화면이 사라지기 전에 바로 서버로 보내요. (로그아웃 등)
+      for (const { timer, commit } of pendingDeletes.values()) {
+        clearTimeout(timer);
+        commit();
+      }
     };
   }, []);
 
-  // 혼잣말: 5초마다 확인해서, 30초 넘게 조용했으면 다가오는 일정이나 평소 혼잣말을 해요.
-  // (다른 탭을 보고 있거나 '지난 일 가져오기' 창이 떠 있으면 쉬어요)
+  // 혼잣말: 5초마다 확인해서, 설정한 시간(30초·1분) 넘게 조용했으면 다가오는 일정이나 평소 혼잣말을 해요.
+  // (혼잣말 끄기면 안 하고, 다른 탭을 보고 있으면 쉬어요)
   useEffect(() => {
+    const waitMs = IDLE_TALK_MS[idleMode];
+    if (!waitMs) return;
     const timer = setInterval(() => {
-      if (document.hidden || checkIn) return;
-      if (Date.now() - lastSpeakRef.current < IDLE_TALK_MS) return;
+      if (document.hidden) return;
+      if (Date.now() - lastSpeakRef.current < waitMs) return;
 
       const reminder =
         Math.random() < IDLE_REMIND_CHANCE ? makeReminder(todos, lastReminderRef.current) : null;
       if (reminder) lastReminderRef.current = reminder.key;
-      speakRef.current?.(reminder ? reminder.text : getIdleLine(tiredReason, xpRef.current));
+      speakRef.current?.(reminder ? reminder.text : getIdleLine(tiredReason, xpRef.current), { idle: true });
     }, 5000);
     return () => clearInterval(timer);
-  }, [todos, tiredReason, checkIn]);
+  }, [todos, tiredReason, idleMode]);
 
   // 물어볼 지난 일이 없었다면, 오늘 확인했다고 서버에도 기록해요. (접속할 때 한 번)
   const recordedVisitRef = useRef(false); // 개발 모드(StrictMode)에서 두 번 실행돼도 한 번만 보내요
@@ -438,24 +492,38 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
     if (recordedVisitRef.current) return;
     recordedVisitRef.current = true;
     if (!visit.checkedToday && visit.candidates.length === 0) {
-      persist(api.updateProfile({ lastCheckInDate: todayStr() }));
+      // 접속 기록은 실패해도 다음 접속 때 다시 기록돼서, 알림 없이 기록만 남겨요.
+      api.updateProfile({ lastCheckInDate: todayStr() }).catch((error) => {
+        console.error("접속 날짜 기록 실패:", error.code || error);
+      });
     }
     // visit 값은 접속할 때 정해지고 바뀌지 않아서, 사실상 처음 한 번만 실행돼요.
   }, [visit.checkedToday, visit.candidates.length]);
 
   /* ---------- 저장 도우미 ---------- */
 
-  // 저장을 뒤에서 처리하고, 실패하면 말풍선으로 알려 줘요.
+  // 저장을 뒤에서 처리하고, 실패하면 사라지지 않는 알림으로 알려 줘요.
   function persist(...promises) {
     Promise.all(promises).catch((error) => {
       console.error("저장 실패:", error.code || error);
-      speak(getSaveErrorText(error));
+      showSaveError(error);
+    });
+  }
+
+  // 저장 실패 알림: 닫을 때까지 남아 있고, '새로고침'으로 서버에 저장된 상태로 화면을 다시 맞춰요.
+  // (말풍선에만 띄우면 혼잣말에 금방 덮여서 놓치기 쉬워요)
+  function showSaveError(error) {
+    showToast({
+      text: getSaveErrorText(error),
+      actionLabel: "새로고침",
+      onAction: () => window.location.reload(),
+      sticky: true,
     });
   }
 
   function getSaveErrorText(error) {
     const isApiError = typeof error?.code === "string" && error.code.startsWith("api/");
-    return isApiError ? `앗, 저장하지 못했어요 😢 ${getErrorMessage(error)}` : MESSAGES.saveError;
+    return isApiError ? `저장하지 못했어요. ${getErrorMessage(error)}` : MESSAGES.saveError;
   }
 
   // XP를 더하거나 빼고(0 밑으로는 안 내려가요), 이전/이후 단계를 알려 줘요.
@@ -530,7 +598,7 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
       return true;
     } catch (error) {
       console.error("반복 추가 실패:", error.code || error);
-      speak(getSaveErrorText(error));
+      showSaveError(error);
       return false;
     }
   }
@@ -588,6 +656,11 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
         speak(pickRandom(MESSAGES.uncheck));
       }
     } else if (done) {
+      // 처음 완료할 때 한 번: 효과음을 켤지 제안해요 (처음에는 꺼져 있어서)
+      if (!soundOnRef.current && shouldSuggestSound()) {
+        markSoundSuggested();
+        showToast({ text: "냠냠 소리도 들어 볼래요? 🔊", actionLabel: "효과음 켜기", onAction: () => setSoundPref(true) });
+      }
       // 완료: 밥 먹기 + 칭찬, 밥을 다 먹은 뒤에 진화하도록 조금 늦게 연출
       const duration = feedPet();
       sound("eat");
@@ -605,26 +678,63 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
     persist(api.updateTodo(id, { done, bonusXp }), api.updateProfile({ xpDelta: delta }));
   }
 
-  // [삭제] 완료된 일은 그냥 정리, 미완료 일은 '포기'로 XP -10 (반복 할 일도 같아요)
-  function handleDelete(id) {
-    const todo = todos.find((t) => t.id === id);
+  /*
+    [지우기] reason: "done"(완료한 일 정리) | "unneeded"(필요 없어졌어요) → XP 그대로
+                     "giveUp"(포기할래요) → XP -10 (반복 할 일도 같아요)
+    - 5초 동안 '되돌리기'를 누를 수 있게, 서버에서 지우는 건 알림이 사라진 뒤에 해요.
+      (그 전에 화면을 닫거나 로그아웃하면 그때 바로 지워요)
+  */
+  function handleDelete(id, reason = "giveUp") {
+    const index = todos.findIndex((t) => t.id === id);
+    const todo = todos[index];
     if (!todo) return;
+    const giveUp = reason === "giveUp" && !todo.done;
+    const delta = giveUp ? XP_RULES.GIVE_UP : 0;
+
     setTodos((list) => list.filter((t) => t.id !== id));
-    if (todo.done) {
-      // 완료된 일 정리: XP 변화 없음
-      speak(pickRandom(MESSAGES.cleanDone));
+    if (giveUp) {
+      // 포기: 충격 + 잔소리 + XP -10
+      const { oldStage, newStage } = applyXp(delta);
+      shockPet();
+      sound("shock");
+      speak(pickRandom(MESSAGES.giveUp));
+      // 카운트다운 중이면 단계 변화는 나중에 한꺼번에 보여 줘요.
+      if (!batchRef.current) handleStageChange(oldStage, newStage, 1500);
+    } else {
+      speak(pickRandom(todo.done ? MESSAGES.cleanDone : MESSAGES.unneeded));
       sound("click");
-      persist(api.deleteTodo(id));
-      return;
     }
-    // 미완료 할 일 포기: 충격 + 잔소리 + XP -10
-    const { oldStage, newStage } = applyXp(XP_RULES.GIVE_UP);
-    shockPet();
-    sound("shock");
-    speak(pickRandom(MESSAGES.giveUp));
-    // 카운트다운 중이면 단계 변화는 나중에 한꺼번에 보여 줘요.
-    if (!batchRef.current) handleStageChange(oldStage, newStage, 1500);
-    persist(api.deleteTodo(id), api.updateProfile({ xpDelta: XP_RULES.GIVE_UP }));
+
+    // 서버에서 지우기는 잠시 미뤄요 (되돌리기를 누르면 취소)
+    const commit = () => {
+      pendingDeletesRef.current.delete(id);
+      persist(api.deleteTodo(id), delta ? api.updateProfile({ xpDelta: delta }) : null);
+    };
+    const timer = setTimeout(commit, TOAST_MS + 300);
+    pendingDeletesRef.current.set(id, { timer, commit });
+
+    showToast({
+      text: giveUp ? `포기했어요 (XP ${delta})` : "지웠어요",
+      actionLabel: "되돌리기",
+      onAction: () => undoDelete(id, todo, index, delta),
+    });
+  }
+
+  // 지우기 되돌리기: 아직 서버에 보내지 않았으니 화면만 원래대로 돌려요.
+  function undoDelete(id, todo, index, delta) {
+    const pending = pendingDeletesRef.current.get(id);
+    if (!pending) return; // 이미 서버에서 지워졌다면 되돌릴 수 없어요
+    clearTimeout(pending.timer);
+    pendingDeletesRef.current.delete(id);
+    setTodos((list) => {
+      const next = [...list];
+      next.splice(Math.min(index, next.length), 0, todo); // 원래 자리로
+      return next;
+    });
+    if (delta) applyXp(-delta);
+    flashMood("happy");
+    speak("휴~ 되돌렸어요! 다시 같이 해 봐요 💪");
+    sound("add");
   }
 
   // [⭐ 중요 표시] 그날 목록 맨 위에 고정 / 해제 (XP 변화 없음)
@@ -693,7 +803,7 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
       sound("add");
     } catch (error) {
       console.error("반복으로 바꾸기 실패:", error.code || error);
-      speak(getSaveErrorText(error));
+      showSaveError(error);
     }
   }
 
@@ -721,6 +831,20 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
     speak(getCarryMessage(carryCount));
     if (!batchRef.current) handleStageChange(oldStage, newStage, 1200);
     persist(api.updateTodo(id, { date, carryCount }), api.updateProfile({ xpDelta: XP_RULES.CARRY }));
+
+    // 5초 동안 되돌리기: 날짜와 넘긴 횟수, XP를 원래대로
+    const prev = { date: todo.date, carryCount: todo.carryCount };
+    showToast({
+      text: `${date === todayStr() ? "오늘로" : "다음 날로"} 넘겼어요 (XP ${XP_RULES.CARRY})`,
+      actionLabel: "되돌리기",
+      onAction: () => {
+        patchTodo(id, prev);
+        applyXp(-XP_RULES.CARRY);
+        speak("넘기기를 취소했어요. 오늘 해치워 봐요! 🔥");
+        sound("add");
+        persist(api.updateTodo(id, prev), api.updateProfile({ xpDelta: -XP_RULES.CARRY }));
+      },
+    });
   }
 
   function handleCarryInfo(todo) {
@@ -767,6 +891,46 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
     );
   }
 
+  /* ---------- 🏠 집 들어가기 / 나오기 ---------- */
+  // 폰: 집에 들어가면 할 일 칸을 숨기고 게임기만 보여 줘요. (CSS의 .app.is-home)
+  // PC: 작은 카드 자리에 게임기가 나오고, 할 일 목록은 그 아래에 그대로 있어요.
+
+  function handleHome(open) {
+    setAtHome(open);
+    sound("click");
+    window.scrollTo({ top: 0 }); // 폰에서 아래쪽을 보던 중이어도 게임기가 바로 보이게
+  }
+
+  /* ---------- 설정 (이 기기에만 기억) ---------- */
+
+  function handleIdleModeChange(mode) {
+    setIdleMode(mode);
+    saveLocal(IDLE_MODE_KEY, mode);
+    lastSpeakRef.current = Date.now(); // 바꾼 직후 바로 말하지 않게 시간을 다시 세요
+  }
+
+  function handleSrIdleChange(on) {
+    setSrIdle(on);
+    saveLocal(SR_IDLE_KEY, on ? "1" : "0");
+  }
+
+  /* ---------- 게임기 각인 ---------- */
+
+  // text: 새길 문구 ("": 안 새기기, 기본 로고)
+  function handleEngrave(text) {
+    setEngraveMode(null);
+    setProfile((p) => ({ ...p, engraving: text }));
+    if (text) {
+      flashMood("happy");
+      speak(`게임기에 '${text}' 새겼어요! 마음에 쏙 들어요 ✨`);
+      sound("evolve");
+    } else {
+      speak("알겠어요! 새기고 싶을 때 프로필 메뉴에서 불러 주세요 😊");
+      sound("click");
+    }
+    persist(api.updateProfile({ engraving: text }));
+  }
+
   /* ---------- 화면 전환 (할 일 ↔ 스케줄) ---------- */
 
   function handleViewChange(nextView) {
@@ -775,10 +939,9 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
     sound("click");
   }
 
-  // 스케줄에서 날짜를 누르면: 그날의 할 일 화면으로 이동 (필터는 '전체'로)
+  // 스케줄에서 날짜를 누르면: 그날의 할 일 화면으로 이동
   function handleOpenDate(date) {
     setSelectedDate(date);
-    setFilter("all");
     setView("todo");
     sound("click");
   }
@@ -800,9 +963,8 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
     sound("click");
   }
 
-  // C 버튼: 효과음 켜기/끄기 (이 브라우저에 기억해요)
-  function handleToggleSound() {
-    const next = !soundOn;
+  // 효과음 켜기/끄기 (이 브라우저에 기억해요) — 설정 창과 '소리 켜기' 알림이 같이 써요
+  function setSoundPref(next) {
     setSoundOn(next);
     soundOnRef.current = next;
     saveSoundPref(next);
@@ -810,27 +972,41 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
     speak(next ? "소리를 켰어요 🔊" : "쉿, 조용히 할게요 🔇");
   }
 
+
   return (
     <>
-      <main className="app">
-        <Device
-          xp={viewXp}
-          pendingCount={pendingCount}
-          tired={!!tiredReason}
-          mood={mood}
-          bubbleText={bubbleText}
-          soundOn={soundOn}
-          onPet={handlePet}
-          onTalk={handleTalk}
-          onToggleSound={handleToggleSound}
-          fxRefs={{
-            device: deviceRef,
-            screen: screenRef,
-            bubble: bubbleRef,
-            pet: petRef,
-            effectLayer: effectLayerRef,
-          }}
-        />
+      <main className={`app${atHome ? " is-home" : ""}`}>
+        {/* 위쪽 바: 로고 + ⓘ 도움말 + 프로필 메뉴(효과음, 로그아웃) */}
+        <AppHeader user={user} onOpenSettings={() => setSettingsOpen(true)} onLogout={onLogout} />
+        {/* 다마고치: 평소엔 작은 카드, 🏠를 누르면 원래 게임기 화면 (둘 다 같은 연출 ref를 받아요) */}
+        <div className="pet-slot" ref={deviceRef}>
+          {atHome ? (
+            <Device
+              xp={viewXp}
+              pendingCount={pendingCount}
+              tired={!!tiredReason}
+              mood={mood}
+              bubbleText={bubbleText}
+              onPet={handlePet}
+              onTalk={handleTalk}
+              onClose={() => handleHome(false)}
+              engraving={profile.engraving || ""}
+              onEngrave={() => setEngraveMode("edit")}
+              fxRefs={petFxRefs}
+            />
+          ) : (
+            <PetCard
+              xp={viewXp}
+              tired={!!tiredReason}
+              mood={mood}
+              bubbleText={bubbleText}
+              onPet={handlePet}
+              onTalk={handleTalk}
+              onHome={() => handleHome(true)}
+              fxRefs={petFxRefs}
+            />
+          )}
+        </div>
         {view === "schedule" ? (
           <SchedulePanel
             todos={todos}
@@ -841,14 +1017,12 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
         ) : (
           <TodoPanel
             tabs={<ViewTabs view={view} onChange={handleViewChange} />}
+            notice={checkIn && <CheckInCard candidates={checkIn} onResolve={handleCheckIn} />}
             todos={todos}
             routines={routines}
             selectedDate={selectedDate}
-            filter={filter}
-            user={user}
             onMoveDate={(days) => setSelectedDate((d) => addDays(d, days))}
             onToday={() => setSelectedDate(todayStr())}
-            onFilterChange={setFilter}
             onAdd={handleAdd}
             onToggle={handleToggle}
             onDelete={handleDelete}
@@ -857,9 +1031,12 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
             onCarryInfo={handleCarryInfo}
             onStopRoutine={handleStopRoutine}
             onStar={handleStar}
-            onLogout={onLogout}
           />
         )}
+
+        {/* 알림: 되돌리기, 저장 실패, 소리 제안 — 할 일 목록 바로 아래에 떠요.
+            목록이 길어서 아래가 화면 밖이면 화면 아래쪽에 붙어서 보여요. (CSS position: sticky) */}
+        <Toast toast={toast} onClose={closeToast} />
       </main>
 
       {/* 미니 다마고치 (게임기가 화면 밖으로 나가면 오른쪽 아래에 나타나요) */}
@@ -879,7 +1056,41 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
       {/* 진화 축하 폭죽(색종이)이 떨어지는 전체 화면 레이어 */}
       <div className="confetti-layer" aria-hidden="true" ref={confettiRef} />
 
-      {checkIn && <CheckInModal candidates={checkIn} onResolve={handleCheckIn} />}
+
+      {/* 설정 창 */}
+      {settingsOpen && (
+        <SettingsModal
+          soundOn={soundOn}
+          onSoundChange={setSoundPref}
+          idleMode={idleMode}
+          onIdleModeChange={handleIdleModeChange}
+          srIdle={srIdle}
+          onSrIdleChange={handleSrIdleChange}
+          engraving={profile.engraving || ""}
+          onEngrave={() => {
+            setSettingsOpen(false);
+            setEngraveMode("edit");
+          }}
+          onClose={closeSettings}
+        />
+      )}
+
+      {/* 화면낭독기 전용 읽기 칸 (눈에는 안 보여요): 다마고치 대사를 읽어 줘요. 혼잣말은 설정에 따라 */}
+      <p className="sr-only" aria-live="polite">
+        {announce}
+      </p>
+
+
+      {/* 게임기 각인 창 */}
+      {engraveMode && (
+        <EngraveModal
+          initialText={profile.engraving || ""}
+          userName={user.displayName}
+          isFirst={engraveMode === "first"}
+          onSave={handleEngrave}
+          onClose={() => setEngraveMode(null)}
+        />
+      )}
     </>
   );
 }

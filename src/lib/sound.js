@@ -2,6 +2,8 @@
   8비트 효과음 (Web Audio API)
   - 소리 파일 없이 브라우저가 직접 '삐빅' 소리를 만들어요. (기존 app.js의 "9. 8비트 효과음")
   - 효과음 켜기/끄기 설정은 이 브라우저에만 저장해요. (DB에 넣을 필요 없는 개인 설정)
+  - 처음에는 꺼져 있어요. (지하철·회의 중에 갑자기 소리가 나지 않게)
+    첫 완료 때 한 번만 "효과음을 켜 볼까요?"라고 제안해요. 직접 켜거나 끈 적이 있으면 그 선택을 따라요.
 */
 
 // 효과음 종류별 음 높이(Hz)와 파형
@@ -55,12 +57,31 @@ export function playSound(name) {
 
 const SOUND_PREF_KEY = "tamado:sound";
 
-// 저장된 설정 읽기 (시크릿 모드 등으로 저장소를 못 쓰면 '켜짐')
+const SOUND_ASKED_KEY = "tamado:soundAsked";
+
+// 저장된 설정 읽기: 직접 켠 적이 있을 때만 켜짐 (처음이거나 저장소를 못 쓰면 꺼짐)
 export function loadSoundPref() {
   try {
-    return localStorage.getItem(SOUND_PREF_KEY) !== "off";
+    return localStorage.getItem(SOUND_PREF_KEY) === "on";
   } catch {
-    return true;
+    return false;
+  }
+}
+
+// "효과음을 켜 볼까요?" 제안을 해도 될까요? (직접 정한 적도, 물어본 적도 없을 때만)
+export function shouldSuggestSound() {
+  try {
+    return localStorage.getItem(SOUND_PREF_KEY) === null && localStorage.getItem(SOUND_ASKED_KEY) === null;
+  } catch {
+    return false;
+  }
+}
+
+export function markSoundSuggested() {
+  try {
+    localStorage.setItem(SOUND_ASKED_KEY, "1");
+  } catch {
+    /* 저장 못 해도 괜찮아요 (다음에 한 번 더 물어볼 뿐이에요) */
   }
 }
 

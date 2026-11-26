@@ -174,13 +174,6 @@ export function starredFirst(todos) {
   return [...todos].sort((a, b) => Number(!!b.starred) - Number(!!a.starred));
 }
 
-// 필터(all | active | done)에 맞는 할 일만 골라요.
-export function filterTodos(todos, filter) {
-  if (filter === "active") return todos.filter((t) => !t.done);
-  if (filter === "done") return todos.filter((t) => t.done);
-  return todos;
-}
-
 // 마감일 표시 정보: { text, cls } 또는 null
 export function getDueInfo(todo, today = todayStr()) {
   if (!todo.dueDate) return null;

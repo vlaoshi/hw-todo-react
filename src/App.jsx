@@ -31,10 +31,8 @@ function BlankDevice() {
         pendingCount={0}
         mood="normal"
         bubbleText={MESSAGES.greet[1]}
-        soundOn
         onPet={noop}
         onTalk={noop}
-        onToggleSound={noop}
       />
     </main>
   );

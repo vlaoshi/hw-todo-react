@@ -8,6 +8,7 @@
   - 접기/보이기 설정은 이 브라우저에 기억해요. (개인 화면 설정이라 DB에는 저장하지 않아요)
 */
 import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "./Icons.jsx";
 import { formatLong, formatShort, todayStr } from "../utils/date.js";
 import { formatRoutine, isRoutineEnded } from "../utils/game.js";
 import { addMonths, currentMonth, formatMonth, getScheduleDays, relativeDayLabel } from "../utils/schedule.js";
@@ -93,7 +94,7 @@ export default function SchedulePanel({ todos, routines, tabs, onOpenDate }) {
       {/* 달 이동: ◀ 2026년 11월 ▶ (할 일 화면의 날짜 이동과 같은 모양) */}
       <div className="date-nav schedule-nav">
         <button type="button" className="date-nav__btn" aria-label="이전 달" onClick={() => setMonth(addMonths(month, -1))}>
-          ◀
+          <ChevronLeft />
         </button>
         <div className="date-nav__center">
           <strong className="date-nav__label" aria-live="polite">
@@ -106,7 +107,7 @@ export default function SchedulePanel({ todos, routines, tabs, onOpenDate }) {
           )}
         </div>
         <button type="button" className="date-nav__btn" aria-label="다음 달" onClick={() => setMonth(addMonths(month, 1))}>
-          ▶
+          <ChevronRight />
         </button>
       </div>
 

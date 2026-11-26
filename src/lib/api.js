@@ -111,8 +111,11 @@ export function loadProfile() {
 }
 
 // 프로필 변경. XP 변화량이 한도(±100)를 넘으면 나눠서 보내요.
-export async function updateProfile({ xpDelta = 0, lastCheckInDate } = {}) {
-  const base = lastCheckInDate !== undefined ? { lastCheckInDate } : {};
+// engraving: 게임기 각인 문구 ("": 안 새기기)
+export async function updateProfile({ xpDelta = 0, lastCheckInDate, engraving } = {}) {
+  const base = {};
+  if (lastCheckInDate !== undefined) base.lastCheckInDate = lastCheckInDate;
+  if (engraving !== undefined) base.engraving = engraving;
   let remaining = xpDelta;
   do {
     const step = Math.max(-XP_DELTA_LIMIT, Math.min(XP_DELTA_LIMIT, remaining));

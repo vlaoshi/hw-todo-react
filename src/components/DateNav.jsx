@@ -3,6 +3,7 @@
   기존 app.js의 renderDateNav를 컴포넌트로 옮겼어요.
 */
 import { daysBetween, formatLong, todayStr } from "../utils/date.js";
+import { ChevronLeft, ChevronRight } from "./Icons.jsx";
 
 export default function DateNav({ selectedDate, onMove, onToday }) {
   const diff = daysBetween(todayStr(), selectedDate);
@@ -12,7 +13,7 @@ export default function DateNav({ selectedDate, onMove, onToday }) {
   return (
     <div className="date-nav">
       <button type="button" className="date-nav__btn" aria-label="이전 날" onClick={() => onMove(-1)}>
-        ◀
+        <ChevronLeft />
       </button>
       <div className="date-nav__center">
         <strong className="date-nav__label" aria-live="polite">
@@ -26,7 +27,7 @@ export default function DateNav({ selectedDate, onMove, onToday }) {
         )}
       </div>
       <button type="button" className="date-nav__btn" aria-label="다음 날" onClick={() => onMove(1)}>
-        ▶
+        <ChevronRight />
       </button>
     </div>
   );
