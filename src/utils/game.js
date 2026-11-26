@@ -155,6 +155,11 @@ export function getDayTodos(todos, selectedDate) {
   );
 }
 
+// 중요한 일(⭐)을 맨 위로 올려요. 나머지 순서는 그대로 둬요. (sort는 같은 값끼리 순서를 지켜요)
+export function starredFirst(todos) {
+  return [...todos].sort((a, b) => Number(!!b.starred) - Number(!!a.starred));
+}
+
 // 필터(all | active | done)에 맞는 할 일만 골라요.
 export function filterTodos(todos, filter) {
   if (filter === "active") return todos.filter((t) => !t.done);

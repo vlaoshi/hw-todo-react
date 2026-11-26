@@ -42,7 +42,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5050/api";
 const XP_DELTA_LIMIT = 100;
 
 // 서버가 수정을 허용하는 필드 (백엔드의 EDITABLE_FIELDS와 같게)
-const TODO_EDITABLE_FIELDS = ["text", "done", "date", "dueDate", "carryCount", "bonusXp"];
+const TODO_EDITABLE_FIELDS = ["text", "done", "date", "dueDate", "carryCount", "bonusXp", "starred"];
 
 // 백엔드에 요청 보내기. 실패하면 code가 붙은 오류를 던져요.
 //   api/network : 서버가 꺼져 있거나 연결할 수 없음 (CORS에 막혀도 이 오류예요)

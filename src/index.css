@@ -1687,3 +1687,231 @@ button {
   border: 0;
   border-radius: 999px;
 }
+
+/* =========================================================
+   12. 화면 전환 탭 + 스케줄 페이지 (React 버전에서 추가)
+   ========================================================= */
+
+/* 📋 할 일 | 📅 스케줄 탭 (로그인 화면 탭과 같은 모양) */
+.view-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 14px;
+  background: #f8f3fa;
+  border-radius: 999px;
+}
+
+.view-tab {
+  flex: 1;
+  min-height: 40px;
+  padding: 8px 4px;
+  font-size: 15px;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.view-tab.is-active {
+  color: var(--ink);
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(205, 180, 219, 0.5);
+}
+
+/* 🔁 반복 중 칸 */
+.schedule-routines {
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  background: #f1fbf6;
+  border: 2px dashed #bfe9d4;
+  border-radius: var(--radius-md);
+}
+
+.schedule-month__title {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: normal;
+  color: var(--ink);
+}
+
+/* '🔁 반복 중' 접기/펴기 버튼 */
+.schedule-routines__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  padding: 0;
+  font-size: 15px;
+  text-align: left;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+}
+
+.schedule-routines__count {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.schedule-routines__arrow {
+  margin-left: auto;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.schedule-routines__list {
+  margin-top: 6px !important;
+}
+
+/* 접었을 때는 여백을 줄여요 */
+.schedule-routines.is-closed {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+/* 반복 할 일 보이기/숨기기 줄 */
+.schedule-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* 스케줄의 '반복 예정' 줄: 흐리게 */
+.schedule-item.is-preview .schedule-item__text {
+  color: var(--ink-soft);
+}
+
+.schedule-routines__list,
+.schedule-day__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.schedule-routines__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.schedule-routines__text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* 월 묶음 */
+.schedule-month + .schedule-month {
+  margin-top: 20px;
+}
+
+.schedule-month__title {
+  position: sticky; /* 스크롤해도 지금 보고 있는 달이 위에 붙어 있어요 */
+  top: 0;
+  z-index: 1;
+  padding: 6px 4px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--pink-deep);
+  background: var(--card);
+}
+
+/* 날짜 묶음 */
+.schedule-day {
+  margin-bottom: 10px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.schedule-day.is-today {
+  border-color: var(--pink);
+}
+
+/* 날짜 제목 (누르면 그날 할 일 화면으로) */
+.schedule-day__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 14px;
+  text-align: left;
+  color: var(--ink);
+  background: #fbf7fc;
+  border: 0;
+}
+
+.schedule-day.is-today .schedule-day__head {
+  background: #fff0f6;
+}
+
+.schedule-day__rel {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.schedule-day__go {
+  margin-left: auto;
+  font-size: 18px;
+  color: var(--ink-soft);
+}
+
+.schedule-day__list {
+  padding: 4px 12px 8px;
+}
+
+/* 일정 한 줄 */
+.schedule-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 14px;
+}
+
+.schedule-item + .schedule-item {
+  border-top: 1px dashed var(--line);
+}
+
+.schedule-item__text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.schedule-item.is-done .schedule-item__text {
+  color: var(--ink-soft);
+  text-decoration: line-through;
+}
+
+.schedule-item.is-due .schedule-item__text {
+  color: #a35b00;
+}
+
+/* =========================================================
+   13. 중요한 일 ⭐ (React 버전에서 추가)
+   ========================================================= */
+
+/* ☆ / ⭐ 버튼 */
+.star-btn {
+  color: var(--ink-soft);
+}
+
+.star-btn.is-on {
+  color: #e0a800;
+}
+
+/* 중요한 일 줄: 노란빛 테두리로 눈에 띄게 */
+.todo-item.is-starred {
+  border-color: var(--yellow);
+  background: #fffbea;
+}

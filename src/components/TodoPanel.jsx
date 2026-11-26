@@ -5,7 +5,7 @@
     (미리보기는 개수에 세지 않고, '완료' 필터에서는 숨겨요)
 */
 import { todayStr } from "../utils/date.js";
-import { filterTodos, getDayTodos, getRoutinePreviews } from "../utils/game.js";
+import { filterTodos, getDayTodos, getRoutinePreviews, starredFirst } from "../utils/game.js";
 import DateNav from "./DateNav.jsx";
 import Filters from "./Filters.jsx";
 import TodoForm from "./TodoForm.jsx";
@@ -19,6 +19,7 @@ function getEmptyText(filter, isPast) {
 }
 
 export default function TodoPanel({
+  tabs, // 맨 위 화면 전환 탭 (📋 할 일 | 📅 스케줄)
   todos,
   routines,
   selectedDate,
@@ -34,6 +35,7 @@ export default function TodoPanel({
   onCarry,
   onCarryInfo,
   onStopRoutine,
+  onStar,
   onLogout,
 }) {
   const dayTodos = getDayTodos(todos, selectedDate);
@@ -45,13 +47,15 @@ export default function TodoPanel({
     selectedDate > todayStr() && filter !== "done"
       ? getRoutinePreviews(routines, todos, selectedDate)
       : [];
-  const visibleTodos = [...filterTodos(dayTodos, filter), ...previews];
+  // 중요한 일(⭐)은 맨 위에 고정
+  const visibleTodos = [...starredFirst(filterTodos(dayTodos, filter)), ...previews];
 
   // 반복 id → 반복 틀 (배지에 요일을 보여 주고, '반복 그만하기'에 써요)
   const routineById = new Map(routines.map((r) => [r.id, r]));
 
   return (
     <section className="panel" aria-label="할 일 목록">
+      {tabs}
       <DateNav selectedDate={selectedDate} onMove={onMoveDate} onToday={onToday} />
       <TodoForm selectedDate={selectedDate} onAdd={onAdd} />
       <Filters filter={filter} counts={counts} onChange={onFilterChange} />
@@ -69,6 +73,7 @@ export default function TodoPanel({
             onCarry={onCarry}
             onCarryInfo={onCarryInfo}
             onStopRoutine={onStopRoutine}
+            onStar={onStar}
           />
         ))}
       </ul>

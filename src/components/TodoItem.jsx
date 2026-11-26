@@ -3,6 +3,7 @@
   - 기존 app.js의 createTodoElement(그리기) + startEdit(수정 모드)를 합쳤어요.
   - 사용자가 쓴 글자는 JSX에 {todo.text}로 넣어요. React가 알아서 글자로만 넣어 줘서
     <script> 같은 코드가 실행될 걱정이 없어요. (기존의 textContent와 같은 효과)
+  - ☆ 버튼을 누르면 중요한 일(⭐)이 되어 그날 목록 맨 위에 고정돼요.
   - 반복 할 일(todo.routineId)은 🔁 배지가 붙고 '내일로' 버튼이 없어요.
     수정 모드에서 '반복 그만하기'를 누를 수 있어요.
   - 미래 날짜의 반복 미리보기(todo.isPreview)는 체크·수정·삭제 없이 흐리게만 보여 줘요.
@@ -25,6 +26,7 @@ export default function TodoItem({
   onCarry,
   onCarryInfo,
   onStopRoutine,
+  onStar,
 }) {
   if (todo.isPreview) return <PreviewItem todo={todo} routine={routine} />;
   return (
@@ -38,6 +40,7 @@ export default function TodoItem({
       onCarry={onCarry}
       onCarryInfo={onCarryInfo}
       onStopRoutine={onStopRoutine}
+      onStar={onStar}
     />
   );
 }
@@ -64,7 +67,18 @@ function PreviewItem({ todo, routine }) {
   );
 }
 
-function RealItem({ todo, routine, selectedDate, onToggle, onDelete, onEdit, onCarry, onCarryInfo, onStopRoutine }) {
+function RealItem({
+  todo,
+  routine,
+  selectedDate,
+  onToggle,
+  onDelete,
+  onEdit,
+  onCarry,
+  onCarryInfo,
+  onStopRoutine,
+  onStar,
+}) {
   const today = todayStr();
   const isRoutine = !!todo.routineId;
   const [editing, setEditing] = useState(false);
@@ -91,6 +105,7 @@ function RealItem({ todo, routine, selectedDate, onToggle, onDelete, onEdit, onC
   const className = [
     "todo-item",
     todo.done && "is-done",
+    todo.starred && "is-starred",
     editing && "is-editing",
     removing && "is-removing",
   ]
@@ -165,6 +180,16 @@ function RealItem({ todo, routine, selectedDate, onToggle, onDelete, onEdit, onC
       )}
 
       <div className="todo-actions">
+        {/* ⭐ 중요한 일: 누르면 그날 목록 맨 위에 고정, 다시 누르면 해제 */}
+        <button
+          type="button"
+          className={`icon-btn star-btn${todo.starred ? " is-on" : ""}`}
+          aria-label={todo.starred ? "중요 표시 해제" : "중요한 일로 표시"}
+          aria-pressed={!!todo.starred}
+          onClick={() => onStar(todo.id)}
+        >
+          {todo.starred ? "⭐" : "☆"}
+        </button>
         <button type="button" className="icon-btn" aria-label="수정" onClick={() => setEditing(true)}>
           ✏️
         </button>

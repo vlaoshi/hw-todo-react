@@ -39,6 +39,7 @@ import {
   routineMatches,
 } from "./utils/game.js";
 import { makeReminder } from "./utils/reminders.js";
+import { makeTalkLine } from "./utils/talk.js";
 import { launchConfetti, playAnimation, spawnEffect } from "./lib/fx.js";
 import { loadSoundPref, playSound, saveSoundPref } from "./lib/sound.js";
 import { getErrorMessage } from "./lib/auth.js";
@@ -46,7 +47,9 @@ import * as api from "./lib/api.js";
 import CheckInModal from "./components/CheckInModal.jsx";
 import Device from "./components/Device.jsx";
 import MiniPet from "./components/MiniPet.jsx";
+import SchedulePanel from "./components/SchedulePanel.jsx";
 import TodoPanel from "./components/TodoPanel.jsx";
+import ViewTabs from "./components/ViewTabs.jsx";
 
 // 한동안 아무 말이 없으면 혼잣말을 해요. (이 시간만큼 조용하면)
 const IDLE_TALK_MS = 30000;
@@ -87,6 +90,7 @@ function createTodo(text, date, dueDate) {
     carryCount: 0,
     bonusXp: 0,
     routineId: null,
+    starred: false,
   };
 }
 
@@ -128,6 +132,7 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
   const [routines, setRoutines] = useState(initialRoutines);
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [filter, setFilter] = useState("all");
+  const [view, setView] = useState("todo"); // 아래쪽 패널: "todo"(할 일) | "schedule"(스케줄)
   const [bubbleText, setBubbleText] = useState(() =>
     getGreeting(initialProfile, initialTodos, visit.absent)
   );
@@ -618,6 +623,22 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
     persist(api.deleteTodo(id), api.updateProfile({ xpDelta: XP_RULES.GIVE_UP }));
   }
 
+  // [⭐ 중요 표시] 그날 목록 맨 위에 고정 / 해제 (XP 변화 없음)
+  function handleStar(id) {
+    const todo = todos.find((t) => t.id === id);
+    if (!todo) return;
+    const starred = !todo.starred;
+    patchTodo(id, { starred });
+    if (starred) {
+      flashMood("happy", 900);
+      speak(pickRandom(MESSAGES.starOn));
+    } else {
+      speak(MESSAGES.starOff);
+    }
+    sound("click");
+    persist(api.updateTodo(id, { starred }));
+  }
+
   // [수정] 글자와 마감일
   function handleEdit(id, { text, dueDate }) {
     const todo = todos.find((t) => t.id === id);
@@ -702,6 +723,22 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
     );
   }
 
+  /* ---------- 화면 전환 (할 일 ↔ 스케줄) ---------- */
+
+  function handleViewChange(nextView) {
+    if (nextView === view) return;
+    setView(nextView);
+    sound("click");
+  }
+
+  // 스케줄에서 날짜를 누르면: 그날의 할 일 화면으로 이동 (필터는 '전체'로)
+  function handleOpenDate(date) {
+    setSelectedDate(date);
+    setFilter("all");
+    setView("todo");
+    sound("click");
+  }
+
   /* ---------- 게임기 버튼 ---------- */
 
   // A 버튼 또는 캐릭터 클릭: 쓰다듬기
@@ -713,18 +750,9 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
     sound("click");
   }
 
-  // B 버튼: 현재 상태 알려 주기
+  // B 버튼: 말 걸기 — 오늘 할 일·해낸 일·다가오는 일정·경험치 중에서 골라 이야기해요 (utils/talk.js)
   function handleTalk() {
-    const xp = xpRef.current;
-    const next = STAGES[getStageIndex(xp) + 1];
-    if (tiredReason) {
-      speak(pickRandom(MESSAGES.tired[tiredReason]));
-    } else if (next) {
-      const needXp = next.minXp - xp;
-      speak(`'${next.name}'까지 ${needXp} XP! 할 일 ${Math.ceil(needXp / XP_RULES.COMPLETE)}개만 더 완료해 주세요!`);
-    } else {
-      speak(`저는 이미 전설이에요 👑 총 ${xp} XP를 모았어요!`);
-    }
+    speak(makeTalkLine({ todos, xp: xpRef.current, tiredReason, lastLine: bubbleText }));
     sound("click");
   }
 
@@ -759,24 +787,35 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
             effectLayer: effectLayerRef,
           }}
         />
-        <TodoPanel
-          todos={todos}
-          routines={routines}
-          selectedDate={selectedDate}
-          filter={filter}
-          user={user}
-          onMoveDate={(days) => setSelectedDate((d) => addDays(d, days))}
-          onToday={() => setSelectedDate(todayStr())}
-          onFilterChange={setFilter}
-          onAdd={handleAdd}
-          onToggle={handleToggle}
-          onDelete={handleDelete}
-          onEdit={handleEdit}
-          onCarry={handleCarry}
-          onCarryInfo={handleCarryInfo}
-          onStopRoutine={handleStopRoutine}
-          onLogout={onLogout}
-        />
+        {view === "schedule" ? (
+          <SchedulePanel
+            todos={todos}
+            routines={routines}
+            tabs={<ViewTabs view={view} onChange={handleViewChange} />}
+            onOpenDate={handleOpenDate}
+          />
+        ) : (
+          <TodoPanel
+            tabs={<ViewTabs view={view} onChange={handleViewChange} />}
+            todos={todos}
+            routines={routines}
+            selectedDate={selectedDate}
+            filter={filter}
+            user={user}
+            onMoveDate={(days) => setSelectedDate((d) => addDays(d, days))}
+            onToday={() => setSelectedDate(todayStr())}
+            onFilterChange={setFilter}
+            onAdd={handleAdd}
+            onToggle={handleToggle}
+            onDelete={handleDelete}
+            onEdit={handleEdit}
+            onCarry={handleCarry}
+            onCarryInfo={handleCarryInfo}
+            onStopRoutine={handleStopRoutine}
+            onStar={handleStar}
+            onLogout={onLogout}
+          />
+        )}
       </main>
 
       {/* 미니 다마고치 (게임기가 화면 밖으로 나가면 오른쪽 아래에 나타나요) */}
