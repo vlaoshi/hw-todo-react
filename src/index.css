@@ -19,3 +19,5 @@
 @import "./styles/modal.css"; /* 창(설정, 각인, 지난 일) */
 @import "./styles/toast.css"; /* 아래쪽 알림 */
 @import "./styles/login.css"; /* 로그인 화면 */
+
+@import "./styles/weather.css"; /* 날씨 (작은 카드 칩, 큰 게임기 한 줄) */

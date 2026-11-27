@@ -1,6 +1,7 @@
 /*
   다마고치 작은 카드 (메인 화면 개선안 ①) — 평소 화면 위쪽에 보여요.
   - 캐릭터: 누르면 '교감' (지금은 쓰다듬기 반응, 진화 시스템에서 단계별 반응으로 늘릴 예정)
+  - 날씨: 캐릭터 상자 위 오른쪽에 이모티콘 + 온도만 작게 (자세한 날씨는 큰 게임기에서)
   - 레벨·단계 이름·XP 게이지
   - [말풍선] [💬 말 걸기] [🏠 집]  (말 걸기는 말풍선 바로 옆, 화면을 옮기는 집은 맨 끝)
     🏠 집: 캐릭터가 사는 원래 게임기 화면으로 들어가요. (폰에선 할 일 칸을 숨기고 게임기만)
@@ -12,27 +13,37 @@
 import { getXpProgress } from "../utils/game.js";
 import { HomeIcon, TalkIcon } from "./Icons.jsx";
 import PixelPet from "./PixelPet.jsx";
+import WeatherButton from "./WeatherButton.jsx";
 
-export default function PetCard({ xp, tired = false, mood, bubbleText, onPet, onTalk, onHome, fxRefs = {} }) {
+export default function PetCard({ xp, tired = false, mood, bubbleText, weather = null, onPet, onTalk, onHome, fxRefs = {} }) {
   const { screen: screenRef, bubble: bubbleRef, pet: petRef, effectLayer: effectLayerRef } = fxRefs;
   const { stageIndex, stage, percent, width, text: xpText } = getXpProgress(xp);
 
   return (
     <section className={`pet-card${tired ? " is-tired" : ""}`} aria-label="다마고치" ref={screenRef}>
+      {/* 왼쪽 열: 날씨 칩(위) + 캐릭터 상자. 칩은 날씨 보기를 켰을 때만 보여요 */}
+      <div className="pet-card__visual">
+        {weather && (
+          <div className="weather-chip-row">
+            <WeatherButton weather={weather} variant="chip" />
+          </div>
+        )}
+
       {/* 캐릭터: 누르면 교감 */}
-      <div className="pet-card__lcd">
-        <div className="pet-wrap">
-          <button
-            type="button"
-            className="pet pet-anim"
-            aria-label="다마고치와 교감하기"
-            data-stage={stageIndex + 1}
-            onClick={onPet}
-            ref={petRef}
-          >
-            <PixelPet stageIndex={stageIndex} mood={mood} />
-          </button>
-        </div>
+        <div className="pet-card__lcd">
+          <div className="pet-wrap">
+            <button
+              type="button"
+              className="pet pet-anim"
+              aria-label="다마고치와 교감하기"
+              data-stage={stageIndex + 1}
+              onClick={onPet}
+              ref={petRef}
+            >
+              <PixelPet stageIndex={stageIndex} mood={mood} />
+            </button>
+          </div>
+      </div>
       </div>
 
       <div className="pet-card__info">

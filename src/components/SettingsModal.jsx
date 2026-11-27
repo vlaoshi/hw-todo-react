@@ -80,6 +80,22 @@ function InstallRow() {
   );
 }
 
+// 날씨 줄 설명: 지금 상태를 한 줄로 알려 줘요
+function weatherDesc(status) {
+  switch (status) {
+    case "loading":
+      return "날씨를 가져오는 중이에요…";
+    case "ok":
+      return "위치는 저장하지 않아요 · 30분마다 새로 확인해요";
+    case "denied":
+      return "위치 권한이 꺼져 있어요. 브라우저 설정에서 허용하면 보여요";
+    case "error":
+      return "날씨를 가져오지 못했어요. 잠시 뒤에 다시 확인할게요";
+    default:
+      return "위치를 한 번 사용해 오늘 날씨를 캐릭터 화면에 보여 줘요";
+  }
+}
+
 export default function SettingsModal({
   soundOn,
   onSoundChange,
@@ -87,6 +103,9 @@ export default function SettingsModal({
   onIdleModeChange,
   srIdle,
   onSrIdleChange,
+  weatherOn,
+  onWeatherChange,
+  weatherStatus,
   engraving,
   onEngrave,
   onClose,
@@ -133,6 +152,7 @@ export default function SettingsModal({
           <h3 className="settings__group-title" id="setPet">
             다마고치
           </h3>
+          <SwitchRow label="날씨 보기" desc={weatherDesc(weatherStatus)} checked={weatherOn} onChange={onWeatherChange} />
           <div className="setting-row setting-row--static">
             <span className="setting-row__text">
               <span className="setting-row__label" id="idleLabel">

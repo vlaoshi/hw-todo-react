@@ -12,6 +12,7 @@
     hooks/useIdleTalk.js     혼잣말·리마인드
     hooks/useOffline.js      오프라인(보기 전용), 데이터 기억
     hooks/useOlderTodos.js   예전 기록 더 불러오기 (처음엔 최근 30일만 불러와요)
+    hooks/useWeather.js      날씨 (설정에서 켰을 때만, 위치는 저장하지 않아요)
     hooks/useTodoActions.js  할 일 동작 (추가·완료·지우기·되돌리기·넘기기·별표·수정·지난 일·각인)
 
   다마고치 기분
@@ -42,6 +43,8 @@ import useOlderTodos from "./hooks/useOlderTodos.js";
 import usePetFx from "./hooks/usePetFx.js";
 import useToast from "./hooks/useToast.js";
 import useTodoActions from "./hooks/useTodoActions.js";
+import useWeather from "./hooks/useWeather.js";
+import { makeWeatherLine, markWeatherSpoken, shouldSpeakWeather } from "./utils/weatherTalk.js";
 import AppHeader from "./components/AppHeader.jsx";
 import CheckInCard from "./components/CheckInCard.jsx";
 import EngraveModal from "./components/EngraveModal.jsx";
@@ -107,7 +110,8 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
 
   /* ---------- 역할별 훅 연결 (앞의 훅을 뒤의 훅이 써요) ---------- */
 
-  const { soundOn, soundOnRef, setSound, idleMode, setIdleMode, srIdle, setSrIdle } = useDevicePrefs();
+  const { soundOn, soundOnRef, setSound, idleMode, setIdleMode, srIdle, setSrIdle, weatherOn, setWeatherOn } = useDevicePrefs();
+  const weatherState = useWeather(weatherOn); // 날씨 보기를 켰을 때만 위치를 써서 날씨를 가져와요
   const { toast, showToast, closeToast } = useToast();
   const fx = usePetFx({
     initialXp: initialProfile.xp,
@@ -134,6 +138,14 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
   const { bubbleText, announce, deviceVisible, miniTalking, countdown, handleMiniPetClick } = fx;
   const { deviceRef, miniBodyRef, miniEffectsRef, confettiRef } = fx;
   const petFxRefs = { screen: fx.screenRef, bubble: fx.bubbleRef, pet: fx.petRef, effectLayer: fx.effectLayerRef };
+
+  // 날씨 한마디: 그날 처음이거나 날씨가 바뀌었을 때만 말해요. (날씨 보기를 켰을 때만, 1시간마다 확인)
+  useEffect(() => {
+    const w = weatherState.weather;
+    if (weatherState.status !== "ok" || !w || !shouldSpeakWeather(w)) return;
+    markWeatherSpoken(w);
+    fx.speak(makeWeatherLine(w));
+  }, [weatherState.status, weatherState.weather, fx]);
 
   useIdleTalk({
     idleMode,
@@ -264,6 +276,7 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
               tired={!!tiredReason}
               mood={mood}
               bubbleText={bubbleText}
+              weather={weatherState.weather}
               onPet={handlePet}
               onTalk={handleTalk}
               onClose={() => handleHome(false)}
@@ -277,6 +290,7 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
               tired={!!tiredReason}
               mood={mood}
               bubbleText={bubbleText}
+              weather={weatherState.weather}
               onPet={handlePet}
               onTalk={handleTalk}
               onHome={() => handleHome(true)}
@@ -346,6 +360,9 @@ export default function TodoApp({ user, initialProfile, initialTodos, initialRou
           onIdleModeChange={handleIdleModeChange}
           srIdle={srIdle}
           onSrIdleChange={handleSrIdleChange}
+          weatherOn={weatherOn}
+          onWeatherChange={setWeatherOn}
+          weatherStatus={weatherState.status}
           engraving={profile.engraving || ""}
           onEngrave={() => {
             setSettingsOpen(false);

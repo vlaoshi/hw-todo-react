@@ -83,6 +83,11 @@ async function apiRequest(path, { method = "GET", body } = {}) {
   return data;
 }
 
+// 좌표 → 행정구역 { province, city, town } (로그인 필요, 백엔드가 카카오를 불러요. 키 설정이 없으면 오류)
+export function loadRegion(lat, lon) {
+  return apiRequest(`/region?lat=${lat}&lon=${lon}`);
+}
+
 // 남은 가입 자리 (로그인 전 화면에서 써서 토큰 없이 요청해요)
 export async function loadSignupSlots() {
   let response;

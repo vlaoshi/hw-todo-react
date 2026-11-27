@@ -11,6 +11,7 @@ import { loadSoundPref, saveSoundPref } from "../lib/sound.js";
 
 const IDLE_MODE_KEY = "tamado:idleTalk";
 const SR_IDLE_KEY = "tamado:srIdle"; // "1"이면 화면낭독기가 혼잣말도 읽어요
+const WEATHER_ON_KEY = "tamado:weatherOn"; // "1"이면 날씨를 보여 줘요 (위치를 써서 기본은 꺼 둬요)
 
 function loadLocal(key, fallback) {
   try {
@@ -34,6 +35,7 @@ export default function useDevicePrefs() {
   const soundOnRef = useRef(soundOn);
   const [idleMode, setIdleModeState] = useState(() => loadLocal(IDLE_MODE_KEY, "often"));
   const [srIdle, setSrIdleState] = useState(() => loadLocal(SR_IDLE_KEY, "0") === "1");
+  const [weatherOn, setWeatherOnState] = useState(() => loadLocal(WEATHER_ON_KEY, "0") === "1");
 
   function setSound(on) {
     setSoundOnState(on);
@@ -51,5 +53,10 @@ export default function useDevicePrefs() {
     saveLocal(SR_IDLE_KEY, on ? "1" : "0");
   }
 
-  return { soundOn, soundOnRef, setSound, idleMode, setIdleMode, srIdle, setSrIdle };
+  function setWeatherOn(on) {
+    setWeatherOnState(on);
+    saveLocal(WEATHER_ON_KEY, on ? "1" : "0");
+  }
+
+  return { soundOn, soundOnRef, setSound, idleMode, setIdleMode, srIdle, setSrIdle, weatherOn, setWeatherOn };
 }

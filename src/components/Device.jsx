@@ -12,11 +12,13 @@
 import { getXpProgress } from "../utils/game.js";
 import { BackIcon, BowlIcon, HeartIcon, TalkIcon } from "./Icons.jsx";
 import PixelPet from "./PixelPet.jsx";
+import WeatherButton from "./WeatherButton.jsx";
 
 export default function Device({
   xp,
   pendingCount,
   tired = false, // 방치돼서 피곤한 상태면 true (다크서클 화면 + 배고픔 경고색)
+  weather = null, // 날씨 (날씨 보기를 켰을 때만 있어요)
   mood,
   bubbleText,
   engraving = "", // 게임기에 새긴 문구 (없으면 기본 로고)
@@ -56,6 +58,8 @@ export default function Device({
         <div className="screen__status">
           <span className="level">Lv.{stage.level}</span>
           <span className="stage-name">{stage.name}</span>
+          {/* 날씨: 아이콘과 온도만, 누르면 상세 창 */}
+          <WeatherButton weather={weather} variant="tag" />
           <span className={`hunger${tired ? " is-warning" : ""}`} title="남은 할 일 수">
             <BowlIcon width={16} height={16} /> {pendingCount}
           </span>
@@ -75,6 +79,7 @@ export default function Device({
           </div>
           <span className="xp__text">{xpText}</span>
         </div>
+
 
         {/* 말풍선 (화면낭독기 읽기는 TodoApp의 숨은 읽기 칸이 맡아요: 혼잣말은 설정에 따라) */}
         <div className="bubble" ref={bubbleRef}>

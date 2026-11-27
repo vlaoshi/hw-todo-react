@@ -1,0 +1,206 @@
+/* =========================================================
+   날씨 (Open-Meteo, 설정에서 '날씨 보기'를 켰을 때만)
+   - 작은 카드: 캐릭터 상자 위 칩(아이콘 + 온도)
+   - 큰 게임기: 상태줄 레벨·단계 옆 태그(아이콘 + 온도)
+   - 두 곳 모두 누르면 상세 창(팝오버)이 열려요.
+   ========================================================= */
+
+/* 픽셀 날씨 아이콘: 12칸 격자 (캐릭터의 16칸 격자와 같은 방식) */
+.weather-icon {
+  display: inline-grid;
+  grid-template-columns: repeat(12, var(--px));
+  grid-template-rows: repeat(12, var(--px));
+  vertical-align: middle;
+  flex: none;
+}
+
+/* 칩과 상자를 세로로 쌓는 열: 칩은 상자와 같은 폭(96px)으로 맞춰요 */
+.pet-card__visual {
+  flex: none;
+  width: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.weather-chip-row {
+  display: flex;
+}
+
+/* 작은 카드 칩: 카드 팔레트(라벤더)에 맞추고, 상자와 같은 폭으로 가운데 정렬 */
+.weather-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 30px;
+  padding: 2px 6px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.2;
+  color: var(--ink);
+  background: #f6f0fb;
+  border: 2px solid var(--lavender);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+/* 큰 게임기 상태줄 태그: LCD 안에서 조용히 보이게 (레벨·단계 바로 옆) */
+.weather-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 2px 8px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.2;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.75);
+  border: 2px solid var(--lcd-dark);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.weather-chip:focus-visible,
+.weather-tag:focus-visible {
+  outline: 3px solid var(--lavender);
+  outline-offset: 2px;
+}
+
+/* 상태줄에서 배고픔 숫자는 오른쪽 끝에 둬요 */
+.screen__status .hunger {
+  margin-left: auto;
+}
+
+/* 상세 창: 도움말·프로필 팝오버와 같은 모양, 화면 위에 떠요 */
+.weather-popover {
+  position: fixed;
+  right: auto;
+  z-index: 100;
+  box-sizing: border-box;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+}
+
+.weather-detail {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.weather-detail__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.weather-detail__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: normal;
+  color: var(--ink-mute);
+  outline: none;
+}
+
+/* 지역 이름: 제목 오른쪽에 작게 (내 위치 기준이라는 걸 알려 줘요) */
+.weather-detail__region {
+  font-size: 13px;
+  color: var(--ink-mute);
+  text-align: right;
+}
+
+.weather-detail__now {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.weather-detail__temp {
+  display: block;
+  font-family: "Jua", sans-serif;
+  font-size: 26px;
+  font-weight: normal;
+  color: var(--ink);
+  line-height: 1.1;
+}
+
+.weather-detail__temp span {
+  font-size: 16px;
+  color: var(--ink-mute);
+}
+
+.weather-detail__now small {
+  font-size: 13px;
+  color: var(--ink-mute);
+}
+
+.weather-detail__note {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.weather-detail__foot {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--ink-mute);
+}
+
+/* 오늘 남은 시간: 칸을 화면 너비에 맞춰 나눠요 (밀지 않아도 끝까지 보여요) */
+.weather-detail__hours {
+  margin-top: 12px;
+}
+
+.weather-detail__hour-list {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  gap: 2px;
+  margin: 0;
+  padding: 4px 0 8px;
+  list-style: none;
+}
+
+.weather-detail__hour {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.weather-detail__hour-temp {
+  color: var(--ink);
+}
+
+/* 막대 칸: 높이를 고정하고 막대를 아래에 붙여요 (아이콘 줄이 모두 같은 높이) */
+.weather-detail__bar-area {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 60px;
+}
+
+/* 기온 막대: 연보라 → 분홍 그라데이션 */
+.weather-detail__bar {
+  display: block;
+  width: 10px;
+  min-height: 18px;
+  background: linear-gradient(180deg, var(--pink), var(--lavender));
+  border-radius: 999px;
+}
+
+.weather-detail__hour-time {
+  font-size: 12px;
+  color: var(--ink-mute);
+  white-space: nowrap;
+}
+
+.weather-detail__hour.is-now .weather-detail__hour-time {
+  color: var(--ink);
+}
